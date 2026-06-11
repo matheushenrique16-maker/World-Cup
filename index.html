@@ -25,7 +25,7 @@
   body{
     font-family:var(--inter); color:var(--ink);
     background:linear-gradient(180deg,#0C1330 0%,#0A0E20 42%,#06070F 100%) fixed;
-    min-height:100vh; line-height:1.45; padding-bottom:48px;
+    min-height:100vh; line-height:1.45; padding-bottom:calc(48px + env(safe-area-inset-bottom));
     -webkit-font-smoothing:antialiased;
   }
   /* ambient aurora glow */
@@ -48,7 +48,7 @@
   }
   @keyframes drift{from{transform:translate3d(0,0,0) scale(1)}to{transform:translate3d(2%,-3%,0) scale(1.08) rotate(1deg)}}
   /* top spectrum line */
-  .spectrum{position:fixed;top:0;left:0;right:0;height:3px;z-index:50;
+  .spectrum{position:fixed;top:env(safe-area-inset-top);left:0;right:0;height:3px;z-index:50;
     background:linear-gradient(90deg,var(--g1),var(--g2),var(--g3),var(--gold),var(--g1));
     background-size:300% 100%; animation:slide 12s linear infinite}
   @keyframes slide{to{background-position:300% 0}}
@@ -57,7 +57,8 @@
 
   header{position:sticky;top:0;z-index:40;
     background:rgba(10,14,26,.72); backdrop-filter:blur(14px);
-    border-bottom:1px solid var(--line)}
+    border-bottom:1px solid var(--line);
+    padding-top:env(safe-area-inset-top)}
   .topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px 12px;max-width:620px;margin:0 auto}
   .brand{display:flex;align-items:baseline;gap:8px;font-family:var(--sora);font-weight:800;letter-spacing:.5px;font-size:20px;line-height:1}
   .brand .yr{background:linear-gradient(90deg,var(--g1),var(--g2),var(--g3));-webkit-background-clip:text;background-clip:text;color:transparent}

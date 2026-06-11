@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Copa 2026 · Jogos da Fase de Grupos</title>
+<meta name="theme-color" content="#0A0E1A">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Copa 2026">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-deep:#080B1A; --bg-raise:#141A30; --bg-card:#151C33;
+    --ink:#EAF0FF; --muted:#93A0BE; --faint:#5B6480; --line:rgba(255,255,255,.09);
+    --vio:#7C5CFF; --blue:#4A7CFF; --cyan:#19C9E6; --emerald:#00C26E;
+    --g1:#7C5CFF; --g2:#19C9E6; --g3:#4A7CFF;
+    --gold:#F7C948; --br-green:#00B86B; --br-yellow:#FFD43B;
+    --sora:'Sora',system-ui,sans-serif; --inter:'Inter',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    font-family:var(--inter); color:var(--ink);
+    background:linear-gradient(180deg,#0C1330 0%,#0A0E20 42%,#06070F 100%) fixed;
+    min-height:100vh; line-height:1.45; padding-bottom:48px;
+    -webkit-font-smoothing:antialiased;
+  }
+  /* ambient aurora glow */
+  body::before{
+    content:""; position:fixed; inset:-12%; z-index:-2; pointer-events:none;
+    background:
+      radial-gradient(48vh 48vh at 14% 6%, rgba(124,92,255,.36), transparent 60%),
+      radial-gradient(54vh 54vh at 90% 18%, rgba(25,201,230,.26), transparent 62%),
+      radial-gradient(60vh 60vh at 82% 104%, rgba(0,194,110,.20), transparent 60%),
+      radial-gradient(46vh 46vh at 8% 92%, rgba(74,124,255,.18), transparent 62%),
+      radial-gradient(130vh 100vh at 50% 24%, transparent 50%, rgba(2,3,8,.5) 100%);
+    filter:saturate(118%);
+    animation:drift 26s ease-in-out infinite alternate;
+  }
+  /* fine grain to kill flat banding */
+  body::after{
+    content:""; position:fixed; inset:0; z-index:-1; pointer-events:none; opacity:.05; mix-blend-mode:soft-light;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-size:180px 180px;
+  }
+  @keyframes drift{from{transform:translate3d(0,0,0) scale(1)}to{transform:translate3d(2%,-3%,0) scale(1.08) rotate(1deg)}}
+  /* top spectrum line */
+  .spectrum{position:fixed;top:0;left:0;right:0;height:3px;z-index:50;
+    background:linear-gradient(90deg,var(--g1),var(--g2),var(--g3),var(--gold),var(--g1));
+    background-size:300% 100%; animation:slide 12s linear infinite}
+  @keyframes slide{to{background-position:300% 0}}
+
+  .wrap{max-width:620px;margin:0 auto;padding:0 16px}
+
+  header{position:sticky;top:0;z-index:40;
+    background:rgba(10,14,26,.72); backdrop-filter:blur(14px);
+    border-bottom:1px solid var(--line)}
+  .topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px 12px;max-width:620px;margin:0 auto}
+  .brand{display:flex;align-items:baseline;gap:8px;font-family:var(--sora);font-weight:800;letter-spacing:.5px;font-size:20px;line-height:1}
+  .brand .yr{background:linear-gradient(90deg,var(--g1),var(--g2),var(--g3));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .brand .cup{font-size:18px;filter:drop-shadow(0 0 6px rgba(247,201,72,.5))}
+  .clock{text-align:right;font-family:var(--sora);font-weight:700;font-size:15px;letter-spacing:.5px;font-variant-numeric:tabular-nums}
+  .clock small{display:block;font-family:var(--inter);font-weight:500;font-size:10px;color:var(--muted);letter-spacing:.3px;margin-top:2px}
+
+  .controls{max-width:620px;margin:0 auto;padding:12px 16px 4px}
+  .seg{display:flex;background:var(--bg-raise);border:1px solid var(--line);border-radius:14px;padding:4px;gap:4px}
+  .seg button{flex:1;border:0;background:transparent;color:var(--muted);font-family:var(--inter);font-weight:600;font-size:13.5px;padding:10px 8px;border-radius:10px;cursor:pointer;transition:.18s}
+  .seg button.on{color:#fff;background:linear-gradient(120deg,var(--vio),var(--cyan));box-shadow:0 8px 22px -10px rgba(124,92,255,.7)}
+
+  .br-btn{margin-top:10px;width:100%;display:flex;align-items:center;justify-content:center;gap:8px;
+    border:1px solid rgba(0,184,107,.45);background:linear-gradient(120deg,rgba(0,184,107,.16),rgba(255,212,59,.12));
+    color:var(--ink);font-family:var(--sora);font-weight:700;font-size:14px;letter-spacing:.3px;
+    padding:12px;border-radius:13px;cursor:pointer;transition:.18s}
+  .br-btn:hover{border-color:var(--br-green);box-shadow:0 0 0 3px rgba(0,184,107,.12)}
+  .br-btn .flag{font-size:17px}
+
+  /* day navigator */
+  .daynav{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:16px 16px 6px;max-width:620px;}
+  .wrap .daynav{margin-left:0;margin-right:0}
+  .arw{width:46px;height:46px;flex:0 0 auto;border-radius:13px;border:1px solid var(--line);background:var(--bg-raise);
+    color:var(--ink);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s}
+  .arw:hover{border-color:rgba(255,255,255,.25);background:#19223a}
+  .daylabel{flex:1;text-align:center}
+  .daylabel .wd{font-family:var(--sora);font-weight:800;font-size:18px;text-transform:capitalize;letter-spacing:.3px}
+  .today-pill{display:inline-block;margin-top:4px;font-size:10.5px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;
+    color:#06210f;background:linear-gradient(90deg,var(--br-yellow),var(--br-green));padding:3px 9px;border-radius:999px;cursor:pointer}
+  .daylabel .reset{display:inline-block;margin-top:4px;font-size:11px;color:var(--muted);cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+
+  /* filter row */
+  .filterrow{display:flex;align-items:center;gap:10px;margin:14px 0 4px}
+  .filterrow select{flex:1;appearance:none;-webkit-appearance:none;background:var(--bg-raise);color:var(--ink);
+    border:1px solid var(--line);border-radius:12px;padding:11px 36px 11px 13px;font-family:var(--inter);font-weight:600;font-size:14px;cursor:pointer;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%238A93AD' d='M6 8 0 0h12z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 13px center}
+  .count{font-size:12.5px;color:var(--muted);white-space:nowrap;font-weight:600}
+
+  /* match cards */
+  .list{margin-top:12px;display:flex;flex-direction:column;gap:12px}
+  .datehead{display:flex;align-items:center;gap:12px;margin:20px 2px 2px;color:var(--muted);
+    font-family:var(--sora);font-weight:700;font-size:12.5px;letter-spacing:.8px;text-transform:uppercase}
+  .datehead::after{content:"";flex:1;height:1px;background:var(--line)}
+
+  .card{position:relative;background:linear-gradient(180deg,rgba(24,32,58,.86),rgba(14,20,40,.9));
+    border:1px solid rgba(255,255,255,.10);border-radius:18px;padding:14px 16px 13px;overflow:hidden;
+    box-shadow:0 14px 32px -24px rgba(0,0,0,.9),inset 0 1px 0 rgba(255,255,255,.06)}
+  .card.live{border-color:rgba(247,201,72,.5);box-shadow:0 0 0 1px rgba(247,201,72,.25),0 12px 30px -16px rgba(247,201,72,.4)}
+  .card.done{opacity:.62}
+  .card.br{border-color:rgba(0,184,107,.4)}
+  .card.br::before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:linear-gradient(180deg,var(--br-yellow),var(--br-green))}
+  .card.br{box-shadow:0 14px 34px -20px rgba(0,184,107,.6)}
+
+  .crow1{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px}
+  .chips{display:flex;gap:6px;flex-wrap:wrap}
+  .chip{font-size:10.5px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);
+    background:rgba(255,255,255,.06);border:1px solid var(--line);padding:4px 8px;border-radius:8px}
+  .chip.g{color:#cfd6ea}
+  .badge{display:inline-flex;align-items:center;gap:6px;font-size:10.5px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;
+    padding:5px 9px;border-radius:999px;white-space:nowrap}
+  .badge .dot{width:7px;height:7px;border-radius:50%;display:inline-block}
+  .badge.soon{color:#bcd0ff;background:rgba(123,91,255,.14);border:1px solid rgba(123,91,255,.35)}
+  .badge.soon .dot{background:#9db4ff}
+  .badge.live{color:#1a1300;background:linear-gradient(90deg,var(--gold),#ff7a59);animation:pulse 1.4s ease-in-out infinite}
+  .badge.live .dot{background:#3a1d00;animation:blink 1s steps(2) infinite}
+  .badge.done{color:var(--muted);background:rgba(255,255,255,.05);border:1px solid var(--line)}
+  .badge.done .dot{background:#5B6480}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(247,201,72,.5)}50%{box-shadow:0 0 0 7px rgba(247,201,72,0)}}
+  @keyframes blink{50%{opacity:.25}}
+
+  .crow2{display:flex;align-items:center;gap:16px}
+  .ko{font-family:var(--sora);font-weight:800;font-size:30px;line-height:1;letter-spacing:.5px;font-variant-numeric:tabular-nums;min-width:74px}
+  .card.br .ko{background:linear-gradient(180deg,var(--br-yellow),var(--br-green));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .teams{flex:1;display:flex;flex-direction:column;gap:7px;min-width:0}
+  .team{display:flex;align-items:center;gap:10px;font-size:16.5px;font-weight:600}
+  .team .fl{font-size:21px;line-height:1;flex:0 0 auto}
+  .team .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .vs{font-size:11px;color:var(--faint);font-weight:700;margin-left:31px}
+  .meta{margin-top:11px;font-size:12.5px;color:var(--muted);display:flex;align-items:center;gap:6px}
+  .cd{margin-top:7px;font-size:12px;font-weight:600;color:#a9b6da}
+  .cd.hot{color:var(--gold)}
+
+  .empty{margin-top:26px;text-align:center;color:var(--muted);background:var(--bg-raise);border:1px dashed var(--line);border-radius:16px;padding:30px 20px}
+  .empty .big{font-family:var(--sora);font-weight:700;font-size:16px;color:var(--ink);margin-bottom:6px}
+  .empty .nx{margin-top:14px;font-size:13px}
+  .empty .nx b{color:var(--g3)}
+
+  footer{max-width:620px;margin:34px auto 0;padding:18px 16px 0;border-top:1px solid var(--line);color:var(--muted);font-size:11.5px;line-height:1.6}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:10px}
+  .legend span{display:inline-flex;align-items:center;gap:6px;font-weight:600}
+  .legend i{width:9px;height:9px;border-radius:50%;display:inline-block}
+  .cheer{margin-top:10px;font-family:var(--sora);font-weight:700;color:var(--ink);letter-spacing:.5px}
+  .cheer b{background:linear-gradient(90deg,var(--br-green),var(--br-yellow));-webkit-background-clip:text;background-clip:text;color:transparent}
+
+  @media (prefers-reduced-motion:reduce){
+    body::before,.spectrum,.badge.live,.badge.live .dot{animation:none}
+  }
+  @media(max-width:380px){.ko{font-size:26px;min-width:64px}.team{font-size:15px}}
+</style>
+</head>
+<body>
+<div class="spectrum"></div>
+
+<header>
+  <div class="topbar">
+    <div class="brand"><span class="cup">🏆</span><span>COPA</span><span class="yr">2026</span></div>
+    <div class="clock"><span id="clock">--:--:--</span><small id="tz">seu fuso</small></div>
+  </div>
+  <div class="controls">
+    <div class="seg">
+      <button id="tabDay" class="on" onclick="setView('day')">Por dia</button>
+      <button id="tabAll" onclick="setView('all')">Todas as seleções</button>
+    </div>
+    <button class="br-btn" onclick="goBrazil()"><span class="flag">🇧🇷</span> Ver os jogos do Brasil</button>
+  </div>
+</header>
+
+<main class="wrap">
+  <!-- DAY VIEW -->
+  <section id="dayView">
+    <div class="daynav">
+      <button class="arw" onclick="shiftDay(-1)" aria-label="Dia anterior">‹</button>
+      <div class="daylabel">
+        <div class="wd" id="dayWd">—</div>
+        <span id="dayPill"></span>
+      </div>
+      <button class="arw" onclick="shiftDay(1)" aria-label="Próximo dia">›</button>
+    </div>
+    <div class="list" id="dayList"></div>
+  </section>
+
+  <!-- ALL VIEW -->
+  <section id="allView" style="display:none">
+    <div class="filterrow">
+      <select id="teamFilter" onchange="render()"></select>
+      <span class="count" id="allCount"></span>
+    </div>
+    <div class="list" id="allList"></div>
+  </section>
+
+  <footer>
+    <div class="legend">
+      <span><i style="background:#9db4ff"></i>Agendado</span>
+      <span><i style="background:linear-gradient(90deg,#F7C948,#ff7a59)"></i>Ao vivo</span>
+      <span><i style="background:#5B6480"></i>Encerrado</span>
+    </div>
+    Horários no fuso do seu aparelho (na Irlanda = UTC+1). Os 72 jogos da fase de grupos vão de 11 a 28 de junho de 2026. A FIFA pode ajustar horários — confirme no dia.
+    <div class="cheer">Bora, <b>BRASIL</b>! 🇧🇷</div>
+  </footer>
+</main>
+
+<script>
+const FLAG={"México":"🇲🇽","África do Sul":"🇿🇦","Coreia do Sul":"🇰🇷","Tchéquia":"🇨🇿","Canadá":"🇨🇦","Bósnia e Herzegovina":"🇧🇦","Catar":"🇶🇦","Suíça":"🇨🇭","Brasil":"🇧🇷","Marrocos":"🇲🇦","Haiti":"🇭🇹","Escócia":"🏴󠁧󠁢󠁳󠁣󠁴󠁿","Estados Unidos":"🇺🇸","Paraguai":"🇵🇾","Austrália":"🇦🇺","Turquia":"🇹🇷","Alemanha":"🇩🇪","Curaçao":"🇨🇼","Costa do Marfim":"🇨🇮","Equador":"🇪🇨","Holanda":"🇳🇱","Japão":"🇯🇵","Suécia":"🇸🇪","Tunísia":"🇹🇳","Bélgica":"🇧🇪","Egito":"🇪🇬","Irã":"🇮🇷","Nova Zelândia":"🇳🇿","Espanha":"🇪🇸","Cabo Verde":"🇨🇻","Arábia Saudita":"🇸🇦","Uruguai":"🇺🇾","França":"🇫🇷","Senegal":"🇸🇳","Iraque":"🇮🇶","Noruega":"🇳🇴","Argentina":"🇦🇷","Argélia":"🇩🇿","Áustria":"🇦🇹","Jordânia":"🇯🇴","Portugal":"🇵🇹","RD Congo":"🇨🇩","Uzbequistão":"🇺🇿","Colômbia":"🇨🇴","Inglaterra":"🏴󠁧󠁢󠁥󠁮󠁧󠁿","Croácia":"🇭🇷","Gana":"🇬🇭","Panamá":"🇵🇦"};
+
+// [n, ISO-UTC, rodada, grupo, mandante, visitante, sede, país]
+const RAW=[
+[1,"2026-06-11T19:00:00Z",1,"A","México","África do Sul","Cidade do México","México"],
+[2,"2026-06-12T02:00:00Z",1,"A","Coreia do Sul","Tchéquia","Guadalajara","México"],
+[3,"2026-06-12T19:00:00Z",1,"B","Canadá","Bósnia e Herzegovina","Toronto","Canadá"],
+[4,"2026-06-13T01:00:00Z",1,"D","Estados Unidos","Paraguai","Los Angeles","EUA"],
+[5,"2026-06-13T19:00:00Z",1,"B","Catar","Suíça","São Francisco (Bay Area)","EUA"],
+[6,"2026-06-13T22:00:00Z",1,"C","Brasil","Marrocos","Nova York/Nova Jersey","EUA"],
+[7,"2026-06-14T01:00:00Z",1,"C","Haiti","Escócia","Boston","EUA"],
+[8,"2026-06-14T04:00:00Z",1,"D","Austrália","Turquia","Vancouver","Canadá"],
+[9,"2026-06-14T17:00:00Z",1,"E","Alemanha","Curaçao","Houston","EUA"],
+[10,"2026-06-14T20:00:00Z",1,"F","Holanda","Japão","Dallas","EUA"],
+[11,"2026-06-14T23:00:00Z",1,"E","Costa do Marfim","Equador","Filadélfia","EUA"],
+[12,"2026-06-15T02:00:00Z",1,"F","Suécia","Tunísia","Monterrey","México"],
+[13,"2026-06-15T16:00:00Z",1,"H","Espanha","Cabo Verde","Atlanta","EUA"],
+[14,"2026-06-15T19:00:00Z",1,"G","Bélgica","Egito","Seattle","EUA"],
+[15,"2026-06-15T22:00:00Z",1,"H","Arábia Saudita","Uruguai","Miami","EUA"],
+[16,"2026-06-16T01:00:00Z",1,"G","Irã","Nova Zelândia","Los Angeles","EUA"],
+[17,"2026-06-16T19:00:00Z",1,"I","França","Senegal","Nova York/Nova Jersey","EUA"],
+[18,"2026-06-16T22:00:00Z",1,"I","Iraque","Noruega","Boston","EUA"],
+[19,"2026-06-17T01:00:00Z",1,"J","Argentina","Argélia","Kansas City","EUA"],
+[20,"2026-06-17T04:00:00Z",1,"J","Áustria","Jordânia","São Francisco (Bay Area)","EUA"],
+[21,"2026-06-17T17:00:00Z",1,"K","Portugal","RD Congo","Houston","EUA"],
+[22,"2026-06-17T20:00:00Z",1,"L","Inglaterra","Croácia","Dallas","EUA"],
+[23,"2026-06-17T23:00:00Z",1,"L","Gana","Panamá","Toronto","Canadá"],
+[24,"2026-06-18T02:00:00Z",1,"K","Uzbequistão","Colômbia","Cidade do México","México"],
+[25,"2026-06-18T16:00:00Z",2,"A","Tchéquia","África do Sul","Atlanta","EUA"],
+[26,"2026-06-18T19:00:00Z",2,"B","Suíça","Bósnia e Herzegovina","Los Angeles","EUA"],
+[27,"2026-06-18T22:00:00Z",2,"B","Canadá","Catar","Vancouver","Canadá"],
+[28,"2026-06-19T01:00:00Z",2,"A","México","Coreia do Sul","Guadalajara","México"],
+[29,"2026-06-19T19:00:00Z",2,"D","Estados Unidos","Austrália","Seattle","EUA"],
+[30,"2026-06-19T22:00:00Z",2,"C","Escócia","Marrocos","Boston","EUA"],
+[31,"2026-06-20T00:30:00Z",2,"C","Brasil","Haiti","Filadélfia","EUA"],
+[32,"2026-06-20T03:00:00Z",2,"D","Turquia","Paraguai","São Francisco (Bay Area)","EUA"],
+[33,"2026-06-20T17:00:00Z",2,"F","Holanda","Suécia","Houston","EUA"],
+[34,"2026-06-20T20:00:00Z",2,"E","Alemanha","Costa do Marfim","Toronto","Canadá"],
+[35,"2026-06-21T00:00:00Z",2,"E","Equador","Curaçao","Kansas City","EUA"],
+[36,"2026-06-21T04:00:00Z",2,"F","Tunísia","Japão","Monterrey","México"],
+[37,"2026-06-21T16:00:00Z",2,"H","Espanha","Arábia Saudita","Atlanta","EUA"],
+[38,"2026-06-21T19:00:00Z",2,"G","Bélgica","Irã","Los Angeles","EUA"],
+[39,"2026-06-21T22:00:00Z",2,"H","Uruguai","Cabo Verde","Miami","EUA"],
+[40,"2026-06-22T01:00:00Z",2,"G","Nova Zelândia","Egito","Vancouver","Canadá"],
+[41,"2026-06-22T17:00:00Z",2,"J","Argentina","Áustria","Dallas","EUA"],
+[42,"2026-06-22T21:00:00Z",2,"I","França","Iraque","Filadélfia","EUA"],
+[43,"2026-06-23T00:00:00Z",2,"I","Noruega","Senegal","Toronto","Canadá"],
+[44,"2026-06-23T03:00:00Z",2,"J","Jordânia","Argélia","São Francisco (Bay Area)","EUA"],
+[45,"2026-06-23T17:00:00Z",2,"K","Portugal","Uzbequistão","Houston","EUA"],
+[46,"2026-06-23T20:00:00Z",2,"L","Inglaterra","Gana","Boston","EUA"],
+[47,"2026-06-23T23:00:00Z",2,"L","Panamá","Croácia","Boston","EUA"],
+[48,"2026-06-24T02:00:00Z",2,"K","Colômbia","RD Congo","Guadalajara","México"],
+[49,"2026-06-24T19:00:00Z",3,"B","Suíça","Canadá","Vancouver","Canadá"],
+[50,"2026-06-24T19:00:00Z",3,"B","Bósnia e Herzegovina","Catar","Seattle","EUA"],
+[51,"2026-06-24T22:00:00Z",3,"C","Marrocos","Haiti","Atlanta","EUA"],
+[52,"2026-06-24T22:00:00Z",3,"C","Escócia","Brasil","Miami","EUA"],
+[53,"2026-06-25T01:00:00Z",3,"A","África do Sul","Coreia do Sul","Monterrey","México"],
+[54,"2026-06-25T01:00:00Z",3,"A","Tchéquia","México","Cidade do México","México"],
+[55,"2026-06-25T20:00:00Z",3,"E","Curaçao","Costa do Marfim","Filadélfia","EUA"],
+[56,"2026-06-25T20:00:00Z",3,"E","Equador","Alemanha","Nova York/Nova Jersey","EUA"],
+[57,"2026-06-25T23:00:00Z",3,"F","Tunísia","Holanda","Kansas City","EUA"],
+[58,"2026-06-25T23:00:00Z",3,"F","Japão","Suécia","Dallas","EUA"],
+[59,"2026-06-26T02:00:00Z",3,"D","Turquia","Estados Unidos","Los Angeles","EUA"],
+[60,"2026-06-26T02:00:00Z",3,"D","Paraguai","Austrália","São Francisco (Bay Area)","EUA"],
+[61,"2026-06-26T19:00:00Z",3,"I","Noruega","França","Boston","EUA"],
+[62,"2026-06-26T19:00:00Z",3,"I","Senegal","Iraque","Toronto","Canadá"],
+[63,"2026-06-27T00:00:00Z",3,"H","Cabo Verde","Arábia Saudita","Houston","EUA"],
+[64,"2026-06-27T00:00:00Z",3,"H","Uruguai","Espanha","Guadalajara","México"],
+[65,"2026-06-27T03:00:00Z",3,"G","Nova Zelândia","Bélgica","Vancouver","Canadá"],
+[66,"2026-06-27T03:00:00Z",3,"G","Egito","Irã","Seattle","EUA"],
+[67,"2026-06-27T21:00:00Z",3,"L","Panamá","Inglaterra","Nova York/Nova Jersey","EUA"],
+[68,"2026-06-27T21:00:00Z",3,"L","Croácia","Gana","Filadélfia","EUA"],
+[69,"2026-06-27T23:30:00Z",3,"K","Colômbia","Portugal","Miami","EUA"],
+[70,"2026-06-27T23:30:00Z",3,"K","RD Congo","Uzbequistão","Atlanta","EUA"],
+[71,"2026-06-28T02:00:00Z",3,"J","Argélia","Áustria","Kansas City","EUA"],
+[72,"2026-06-28T02:00:00Z",3,"J","Jordânia","Argentina","Dallas","EUA"]
+];
+
+const M=RAW.map(r=>({n:r[0],d:new Date(r[1]),ms:Date.parse(r[1]),r:r[2],g:r[3],h:r[4],a:r[5],city:r[6],ctry:r[7],br:(r[4]==="Brasil"||r[5]==="Brasil")}))
+            .sort((x,y)=>x.ms-y.ms);
+
+let view="day";
+let sel=startOfDay(new Date());
+
+function startOfDay(d){return new Date(d.getFullYear(),d.getMonth(),d.getDate());}
+function ymd(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
+function sameDay(a,b){return ymd(a)===ymd(b);}
+function fmtTime(d){return d.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});}
+function cap(s){return s.charAt(0).toUpperCase()+s.slice(1);}
+function longDate(d){return cap(d.toLocaleDateString("pt-BR",{weekday:"long"}))+" · "+d.toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit"});}
+function relTxt(ms){const m=Math.round(ms/60000);if(m<60)return"começa em "+m+" min";const h=Math.floor(m/60),mm=m%60;if(h<24)return"começa em "+h+"h"+(mm?(" "+mm+"min"):"");const dd=Math.floor(h/24);return"em "+dd+(dd>1?" dias":" dia");}
+
+function card(m){
+  const fl=t=>FLAG[t]||"⚽";
+  return `<div class="card${m.br?' br':''}" data-ko="${m.ms}">
+    <div class="crow1">
+      <div class="chips"><span class="chip g">Grupo ${m.g}</span><span class="chip">${m.r}ª rodada</span></div>
+      <span class="badge js-status"><span class="dot"></span></span>
+    </div>
+    <div class="crow2">
+      <div class="ko">${fmtTime(m.d)}</div>
+      <div class="teams">
+        <div class="team"><span class="fl">${fl(m.h)}</span><span class="nm">${m.h}</span></div>
+        <div class="team"><span class="fl">${fl(m.a)}</span><span class="nm">${m.a}</span></div>
+      </div>
+    </div>
+    <div class="meta">📍 ${m.city} · ${m.ctry}</div>
+    <div class="cd js-count"></div>
+  </div>`;
+}
+
+function render(){
+  document.getElementById("tabDay").classList.toggle("on",view==="day");
+  document.getElementById("tabAll").classList.toggle("on",view==="all");
+  document.getElementById("dayView").style.display=view==="day"?"block":"none";
+  document.getElementById("allView").style.display=view==="all"?"block":"none";
+  if(view==="day")renderDay(); else renderAll();
+  updateStatuses();
+}
+
+function renderDay(){
+  const today=startOfDay(new Date());
+  document.getElementById("dayWd").textContent=longDate(sel);
+  const pill=document.getElementById("dayPill");
+  if(sameDay(sel,today)) pill.innerHTML='<span class="today-pill">Hoje</span>';
+  else pill.innerHTML='<span class="reset" onclick="goToday()">Voltar para hoje</span>';
+
+  const games=M.filter(m=>sameDay(m.d,sel));
+  const list=document.getElementById("dayList");
+  if(!games.length){
+    const next=M.find(m=>m.ms>=sel.getTime());
+    const after=ymd(sel)>"2026-06-28";
+    list.innerHTML=`<div class="empty"><div class="big">${after?"Fase de grupos encerrada":"Nenhum jogo neste dia"}</div>
+      ${after?"Os 72 jogos da fase de grupos foram de 11 a 28 de junho.":"Use as setas para navegar entre os dias."}
+      ${next?`<div class="nx">Próximo jogo: <b>${longDate(startOfDay(next.d))}</b>, ${fmtTime(next.d)} — ${next.h} × ${next.a}</div>`:""}</div>`;
+    return;
+  }
+  list.innerHTML=games.map(card).join("");
+}
+
+function renderAll(){
+  const sel2=document.getElementById("teamFilter").value;
+  const games=sel2==="__all__"?M:M.filter(m=>m.h===sel2||m.a===sel2);
+  document.getElementById("allCount").textContent=games.length+(games.length===1?" jogo":" jogos");
+  let html="",cur="";
+  games.forEach(m=>{
+    const k=ymd(m.d);
+    if(k!==cur){cur=k;html+=`<div class="datehead">${longDate(startOfDay(m.d))}</div>`;}
+    html+=card(m);
+  });
+  document.getElementById("allList").innerHTML=html||`<div class="empty"><div class="big">Sem jogos</div>Escolha outra seleção.</div>`;
+}
+
+function updateStatuses(){
+  const now=Date.now();
+  document.querySelectorAll("[data-ko]").forEach(el=>{
+    const ko=+el.dataset.ko, end=ko+115*60000;
+    const b=el.querySelector(".js-status"), c=el.querySelector(".js-count");
+    el.classList.remove("live","done");
+    let cls,txt;
+    if(now<ko){cls="soon";txt="Agendado";
+      const diff=ko-now; 
+      if(diff<24*3600000){c.textContent=relTxt(diff); c.classList.toggle("hot",diff<3600000);}
+      else{c.textContent="";c.classList.remove("hot");}
+    } else if(now<end){cls="live";txt="● Ao vivo";el.classList.add("live");c.textContent="Em andamento";c.classList.add("hot");}
+    else {cls="done";txt="Encerrado";el.classList.add("done");c.textContent="";c.classList.remove("hot");}
+    b.className="badge js-status "+cls;
+    b.innerHTML=(cls==="live"?'':'<span class="dot"></span>')+txt;
+  });
+}
+
+function setView(v){view=v;render();window.scrollTo({top:0});}
+function shiftDay(n){sel=new Date(sel.getFullYear(),sel.getMonth(),sel.getDate()+n);render();}
+function goToday(){sel=startOfDay(new Date());render();}
+function goBrazil(){view="all";document.getElementById("teamFilter").value="Brasil";render();window.scrollTo({top:0});}
+
+// build team filter
+(function(){
+  const teams=[...new Set(M.flatMap(m=>[m.h,m.a]))].sort((a,b)=>a.localeCompare(b,"pt-BR"));
+  const sel=document.getElementById("teamFilter");
+  sel.innerHTML='<option value="__all__">Todas as seleções</option>'+teams.map(t=>`<option value="${t}">${FLAG[t]||""} ${t}</option>`).join("");
+})();
+
+// clock + timezone
+const tz=Intl.DateTimeFormat().resolvedOptions().timeZone||"";
+document.getElementById("tz").textContent=tz?tz.replace("_"," "):"seu fuso";
+function tick(){document.getElementById("clock").textContent=new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit",second:"2-digit"});}
+tick();setInterval(tick,1000);
+setInterval(updateStatuses,20000);
+
+render();
+</script>
+</body>
+</html>

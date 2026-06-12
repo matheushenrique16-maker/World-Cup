@@ -135,7 +135,9 @@
   .teams{flex:1;display:flex;flex-direction:column;gap:7px;min-width:0}
   .team{display:flex;align-items:center;gap:10px;font-size:16.5px;font-weight:600}
   .team .fl{font-size:21px;line-height:1;flex:0 0 auto}
-  .team .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .team .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+  .sc{margin-left:auto;flex:0 0 auto;padding-left:10px;font-family:var(--sora);font-weight:800;font-size:19px;font-variant-numeric:tabular-nums;color:var(--ink)}
+  .card.br .sc{color:var(--br-yellow)}
   .vs{font-size:11px;color:var(--faint);font-weight:700;margin-left:31px}
   .meta{margin-top:11px;font-size:12.5px;color:var(--muted);display:flex;align-items:center;gap:6px}
   .cd{margin-top:7px;font-size:12px;font-weight:600;color:#a9b6da}
@@ -289,7 +291,39 @@ const RAW=[
 [72,"2026-06-28T02:00:00Z",3,"J","Jordânia","Argentina","Dallas","EUA"]
 ];
 
-const M=RAW.map(r=>({n:r[0],d:new Date(r[1]),ms:Date.parse(r[1]),r:r[2],g:r[3],h:r[4],a:r[5],city:r[6],ctry:r[7],br:(r[4]==="Brasil"||r[5]==="Brasil")}))
+/* ---- placar ao vivo (API-Football via proxy Cloudflare) ---- */
+const SCORES_URL = "https://copa-placar.matheushenrique-16.workers.dev"; // proxy Cloudflare (football-data.org)
+const LIVE = new Set(["1H","2H","HT","ET","BT","P","LIVE","INT","IN_PLAY","PAUSED"]);
+const DONE = new Set(["FT","AET","PEN","FINISHED","AWARDED"]);
+let scores = {};
+const CODE = {
+ mexico:"MEX", africadosul:"RSA", southafrica:"RSA", coreiadosul:"KOR", southkorea:"KOR", korearepublic:"KOR", korea:"KOR",
+ tchequia:"CZE", czechrepublic:"CZE", czechia:"CZE",
+ canada:"CAN", bosniaeherzegovina:"BIH", bosnia:"BIH", bosniaandherzegovina:"BIH", bosniaherzegovina:"BIH",
+ catar:"QAT", qatar:"QAT", suica:"SUI", switzerland:"SUI",
+ brasil:"BRA", brazil:"BRA", marrocos:"MAR", morocco:"MAR", haiti:"HAI",
+ escocia:"SCO", scotland:"SCO", estadosunidos:"USA", usa:"USA", unitedstates:"USA", unitedstatesofamerica:"USA",
+ paraguai:"PAR", paraguay:"PAR", australia:"AUS", turquia:"TUR", turkey:"TUR", turkiye:"TUR",
+ alemanha:"GER", germany:"GER", curacao:"CUW",
+ costadomarfim:"CIV", ivorycoast:"CIV", cotedivoire:"CIV",
+ equador:"ECU", ecuador:"ECU", holanda:"NED", netherlands:"NED", paisesbaixos:"NED",
+ japao:"JPN", japan:"JPN", suecia:"SWE", sweden:"SWE", tunisia:"TUN",
+ belgica:"BEL", belgium:"BEL", egito:"EGY", egypt:"EGY", ira:"IRN", iran:"IRN", iriran:"IRN",
+ novazelandia:"NZL", newzealand:"NZL", espanha:"ESP", spain:"ESP",
+ caboverde:"CPV", capeverde:"CPV", capeverdeislands:"CPV",
+ arabiasaudita:"KSA", saudiarabia:"KSA", uruguai:"URU", uruguay:"URU",
+ franca:"FRA", france:"FRA", senegal:"SEN", iraque:"IRQ", iraq:"IRQ",
+ noruega:"NOR", norway:"NOR", argentina:"ARG", argelia:"ALG", algeria:"ALG",
+ austria:"AUT", jordania:"JOR", jordan:"JOR", portugal:"POR",
+ rdcongo:"COD", drcongo:"COD", congodr:"COD", congodemocraticrepublic:"COD", democraticrepublicofcongo:"COD",
+ uzbequistao:"UZB", uzbekistan:"UZB", colombia:"COL",
+ inglaterra:"ENG", england:"ENG", croacia:"CRO", croatia:"CRO", gana:"GHA", ghana:"GHA", panama:"PAN"
+};
+function norm(s){return (s||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]/g,"");}
+function code(name){return CODE[norm(name)]||norm(name);}
+function pairKey(h,a){return [code(h),code(a)].sort().join("-");}
+
+const M=RAW.map(r=>({n:r[0],d:new Date(r[1]),ms:Date.parse(r[1]),r:r[2],g:r[3],h:r[4],a:r[5],city:r[6],ctry:r[7],br:(r[4]==="Brasil"||r[5]==="Brasil"),pk:pairKey(r[4],r[5]),hc:code(r[4])}))
             .sort((x,y)=>x.ms-y.ms);
 
 let view="day";
@@ -305,7 +339,7 @@ function relTxt(ms){const m=Math.round(ms/60000);if(m<60)return"começa em "+m+"
 
 function card(m){
   const fl=t=>FLAG[t]||"⚽";
-  return `<div class="card${m.br?' br':''}" data-ko="${m.ms}">
+  return `<div class="card${m.br?' br':''}" data-ko="${m.ms}" data-pk="${m.pk}" data-hc="${m.hc}">
     <div class="crow1">
       <div class="chips"><span class="chip g">Grupo ${m.g}</span><span class="chip">${m.r}ª rodada</span></div>
       <span class="badge js-status"><span class="dot"></span></span>
@@ -313,8 +347,8 @@ function card(m){
     <div class="crow2">
       <div class="ko">${fmtTime(m.d)}</div>
       <div class="teams">
-        <div class="team"><span class="fl">${fl(m.h)}</span><span class="nm">${m.h}</span></div>
-        <div class="team"><span class="fl">${fl(m.a)}</span><span class="nm">${m.a}</span></div>
+        <div class="team"><span class="fl">${fl(m.h)}</span><span class="nm">${m.h}</span><span class="sc js-sh"></span></div>
+        <div class="team"><span class="fl">${fl(m.a)}</span><span class="nm">${m.a}</span><span class="sc js-sa"></span></div>
       </div>
     </div>
     <div class="meta">📍 ${m.city} · ${m.ctry}</div>
@@ -364,19 +398,42 @@ function renderAll(){
   document.getElementById("allList").innerHTML=html||`<div class="empty"><div class="big">Sem jogos</div>Escolha outra seleção.</div>`;
 }
 
+function liveLabel(sk){
+  if(sk.st==="HT"||sk.st==="PAUSED")return"Intervalo";
+  if(sk.st==="ET"||sk.st==="BT")return"Prorrogação"+(sk.el?` ${sk.el}'`:"");
+  if(sk.st==="P")return"Pênaltis";
+  return sk.el?`${sk.el}'`:"Ao vivo";
+}
 function updateStatuses(){
   const now=Date.now();
   document.querySelectorAll("[data-ko]").forEach(el=>{
     const ko=+el.dataset.ko, end=ko+115*60000;
     const b=el.querySelector(".js-status"), c=el.querySelector(".js-count");
+    const sh=el.querySelector(".js-sh"), sa=el.querySelector(".js-sa");
+    const setScore=(x,y)=>{sh.textContent=(x==null?"":x);sa.textContent=(y==null?"":y);};
     el.classList.remove("live","done");
+    const sk=scores[el.dataset.pk];
+    let gh=null,ga=null;
+    if(sk){const sameHome=(sk.hc===el.dataset.hc); gh=sameHome?sk.gh:sk.ga; ga=sameHome?sk.ga:sk.gh;}
     let cls,txt;
-    if(now<ko){cls="soon";txt="Agendado";
-      const diff=ko-now; 
-      if(diff<24*3600000){c.textContent=relTxt(diff); c.classList.toggle("hot",diff<3600000);}
-      else{c.textContent="";c.classList.remove("hot");}
-    } else if(now<end){cls="live";txt="● Ao vivo";el.classList.add("live");c.textContent="Em andamento";c.classList.add("hot");}
-    else {cls="done";txt="Encerrado";el.classList.add("done");c.textContent="";c.classList.remove("hot");}
+    if(sk && LIVE.has(sk.st)){
+      cls="live";txt="● Ao vivo";el.classList.add("live");
+      setScore(gh,ga);c.textContent=liveLabel(sk);c.classList.add("hot");
+    } else if(sk && DONE.has(sk.st)){
+      cls="done";txt="Encerrado";el.classList.add("done");
+      setScore(gh,ga);c.textContent=(sk.st==="PEN"?"decidido nos pênaltis":sk.st==="AET"?"após prorrogação":"");c.classList.remove("hot");
+    } else if(sk && (sk.st==="PST"||sk.st==="CANC"||sk.st==="ABD"||sk.st==="SUSP"||sk.st==="POSTPONED"||sk.st==="CANCELLED"||sk.st==="SUSPENDED")){
+      cls="soon";txt=((sk.st==="PST"||sk.st==="POSTPONED")?"Adiado":(sk.st==="CANC"||sk.st==="CANCELLED")?"Cancelado":sk.st==="ABD"?"Abandonado":"Interrompido");
+      setScore(null,null);c.textContent="";c.classList.remove("hot");
+    } else {
+      setScore(null,null);
+      if(now<ko){cls="soon";txt="Agendado";
+        const diff=ko-now;
+        if(diff<24*3600000){c.textContent=relTxt(diff);c.classList.toggle("hot",diff<3600000);}
+        else{c.textContent="";c.classList.remove("hot");}
+      } else if(now<end){cls="live";txt="● Ao vivo";el.classList.add("live");c.textContent="Em andamento";c.classList.add("hot");}
+      else {cls="done";txt="Encerrado";el.classList.add("done");c.textContent="";c.classList.remove("hot");}
+    }
     b.className="badge js-status "+cls;
     b.innerHTML=(cls==="live"?'':'<span class="dot"></span>')+txt;
   });
@@ -400,6 +457,26 @@ document.getElementById("tz").textContent=tz?tz.replace("_"," "):"seu fuso";
 function tick(){document.getElementById("clock").textContent=new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit",second:"2-digit"});}
 tick();setInterval(tick,1000);
 setInterval(updateStatuses,20000);
+
+// ---- buscar placares (com cache no proxy) ----
+async function fetchScores(){
+  if(!SCORES_URL || /SEU-WORKER/.test(SCORES_URL)) return; // só funciona depois de configurar o Worker
+  try{
+    const r=await fetch(SCORES_URL,{cache:"no-store"});
+    if(!r.ok)return;
+    const d=await r.json();
+    const map={};
+    (d.matches||[]).forEach(m=>{ map[pairKey(m.h,m.a)]={st:m.st,el:m.el,hc:code(m.h),gh:m.gh,ga:m.ga}; });
+    scores=map; updateStatuses();
+  }catch(e){}
+}
+function anyLiveOrSoon(){
+  const now=Date.now();
+  return M.some(m=>{ const sk=scores[m.pk]; if(sk&&LIVE.has(sk.st))return true; return now>=m.ms-300000 && now<=m.ms+3*3600000; });
+}
+document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible")fetchScores(); });
+setInterval(()=>{ if(document.visibilityState==="visible"&&anyLiveOrSoon())fetchScores(); },90000);
+fetchScores();
 
 render();
 </script>

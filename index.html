@@ -143,6 +143,31 @@
   .cd{margin-top:7px;font-size:12px;font-weight:600;color:#a9b6da}
   .cd.hot{color:var(--gold)}
 
+  /* classificação dos grupos */
+  .gcard{background:linear-gradient(180deg,rgba(24,32,58,.86),rgba(14,20,40,.9));border:1px solid rgba(255,255,255,.10);
+    border-radius:18px;padding:14px 14px 11px;margin-bottom:12px;box-shadow:0 14px 32px -24px rgba(0,0,0,.9),inset 0 1px 0 rgba(255,255,255,.06)}
+  .gtitle{font-family:var(--sora);font-weight:800;font-size:15px;letter-spacing:.3px;margin-bottom:9px}
+  .gtbl{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;table-layout:fixed}
+  .gtbl th{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.3px;padding:0 0 7px;text-align:center}
+  .gtbl td{font-size:12.5px;padding:7px 1px;text-align:center;border-top:1px solid var(--line)}
+  .gtbl .pos{width:22px;color:var(--muted);font-weight:700}
+  .gtbl col.cn{width:auto}
+  .gtbl col.c2{width:26px}
+  .gtbl col.csg{width:34px}
+  .gtbl col.cpos{width:24px}
+  .gtbl col.cp{width:30px}
+  .gtbl .tname{text-align:left;overflow:hidden}
+  .gtbl th.tname{text-align:left}
+  .gtbl .tname .fl{font-size:16px;margin-right:7px;vertical-align:-2px}
+  .gtbl .tname .nm{display:inline-block;max-width:118px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle}
+  .gtbl .pts{font-weight:800}
+  .gtbl tr.q1 .pos{color:#19E08A}
+  .gtbl tr.q3 .pos{color:var(--gold)}
+  .gtbl tr.brrow td{color:var(--br-yellow)}
+  .gtbl tr.brrow .nm{font-weight:700}
+  .qnote{margin-top:10px;font-size:10.5px;color:var(--muted);line-height:1.45;display:flex;flex-wrap:wrap;gap:10px}
+  .qnote i{font-style:normal}
+  .qdot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;vertical-align:0}
   .empty{margin-top:26px;text-align:center;color:var(--muted);background:var(--bg-raise);border:1px dashed var(--line);border-radius:16px;padding:30px 20px}
   .empty .big{font-family:var(--sora);font-weight:700;font-size:16px;color:var(--ink);margin-bottom:6px}
   .empty .nx{margin-top:14px;font-size:13px}
@@ -172,7 +197,8 @@
   <div class="controls">
     <div class="seg">
       <button id="tabDay" class="on" onclick="setView('day')">Por dia</button>
-      <button id="tabAll" onclick="setView('all')">Todas as seleções</button>
+      <button id="tabAll" onclick="setView('all')">Seleções</button>
+      <button id="tabGroups" onclick="setView('groups')">Grupos</button>
     </div>
     <button class="br-btn" onclick="goBrazil()"><span class="flag">🇧🇷</span> Ver os jogos do Brasil</button>
   </div>
@@ -199,6 +225,11 @@
       <span class="count" id="allCount"></span>
     </div>
     <div class="list" id="allList"></div>
+  </section>
+
+  <!-- GROUPS VIEW -->
+  <section id="groupsView" style="display:none">
+    <div id="groupsList"></div>
   </section>
 
   <footer>
@@ -326,6 +357,14 @@ function pairKey(h,a){return [code(h),code(a)].sort().join("-");}
 const M=RAW.map(r=>({n:r[0],d:new Date(r[1]),ms:Date.parse(r[1]),r:r[2],g:r[3],h:r[4],a:r[5],city:r[6],ctry:r[7],br:(r[4]==="Brasil"||r[5]==="Brasil"),pk:pairKey(r[4],r[5]),hc:code(r[4])}))
             .sort((x,y)=>x.ms-y.ms);
 
+// mapa código -> {nome PT, bandeira}, montado a partir dos próprios jogos
+const TEAM={};
+M.forEach(m=>{ TEAM[code(m.h)]={pt:m.h,flag:FLAG[m.h]||"⚽"}; TEAM[code(m.a)]={pt:m.a,flag:FLAG[m.a]||"⚽"}; });
+
+// quais seleções compõem cada grupo (A..L)
+const ROSTER={};
+M.forEach(m=>{ (ROSTER[m.g]=ROSTER[m.g]||new Set()).add(m.hc); ROSTER[m.g].add(code(m.a)); });
+
 let view="day";
 let sel=startOfDay(new Date());
 
@@ -359,10 +398,55 @@ function card(m){
 function render(){
   document.getElementById("tabDay").classList.toggle("on",view==="day");
   document.getElementById("tabAll").classList.toggle("on",view==="all");
+  document.getElementById("tabGroups").classList.toggle("on",view==="groups");
   document.getElementById("dayView").style.display=view==="day"?"block":"none";
   document.getElementById("allView").style.display=view==="all"?"block":"none";
-  if(view==="day")renderDay(); else renderAll();
+  document.getElementById("groupsView").style.display=view==="groups"?"block":"none";
+  if(view==="day")renderDay();
+  else if(view==="all")renderAll();
+  else renderGroups();
   updateStatuses();
+}
+
+function groupLabel(gr){const m=(gr||"").match(/([A-La-l])$/);return"Grupo "+(m?m[1].toUpperCase():(gr||""));}
+function groupCard(g){
+  const rows=(g.table||[]).map(t=>{
+    const c=code(t.name),info=TEAM[c],fl=info?info.flag:"⚽",nm=info?info.pt:t.name;
+    const br=(c==="BRA"),q=t.pos<=2?"q1":(t.pos===3?"q3":""),sg=(t.gd>0?"+":"")+t.gd;
+    return `<tr class="${br?'brrow ':''}${q}">
+      <td class="pos">${t.pos}</td>
+      <td class="tname"><span class="fl">${fl}</span><span class="nm">${nm}</span></td>
+      <td>${t.pld}</td><td>${t.w}</td><td>${t.d}</td><td>${t.l}</td>
+      <td>${sg}</td><td class="pts">${t.pts}</td></tr>`;
+  }).join("");
+  return `<div class="gcard"><div class="gtitle">${groupLabel(g.group)}</div>
+    <table class="gtbl">
+      <colgroup><col class="cpos"><col class="cn"><col class="c2"><col class="c2"><col class="c2"><col class="c2"><col class="csg"><col class="cp"></colgroup>
+      <thead><tr><th class="pos">#</th><th class="tname">Time</th><th>J</th><th>V</th><th>E</th><th>D</th><th>SG</th><th class="pts">P</th></tr></thead>
+      <tbody>${rows}</tbody></table></div>`;
+}
+function computeStandings(){
+  const G={};
+  Object.keys(ROSTER).forEach(g=>{ G[g]={}; ROSTER[g].forEach(c=>{ G[g][c]={code:c,pld:0,w:0,d:0,l:0,gf:0,ga:0,pts:0}; }); });
+  M.forEach(m=>{
+    const sk=scores[m.pk]; if(!sk||!DONE.has(sk.st))return;
+    const sameHome=(sk.hc===m.hc), hg=sameHome?sk.gh:sk.ga, ag=sameHome?sk.ga:sk.gh;
+    if(hg==null||ag==null)return;
+    const H=G[m.g][m.hc], A=G[m.g][code(m.a)]; if(!H||!A)return;
+    H.pld++;A.pld++; H.gf+=hg;H.ga+=ag; A.gf+=ag;A.ga+=hg;
+    if(hg>ag){H.w++;H.pts+=3;A.l++;} else if(hg<ag){A.w++;A.pts+=3;H.l++;} else {H.d++;A.d++;H.pts++;A.pts++;}
+  });
+  return Object.keys(G).sort().map(g=>{
+    const rows=Object.values(G[g]).map(t=>({...t,gd:t.gf-t.ga,name:(TEAM[t.code]?.pt)||t.code}));
+    rows.sort((a,b)=> b.pts-a.pts || b.gd-a.gd || b.gf-a.gf || a.name.localeCompare(b.name,"pt-BR"));
+    rows.forEach((r,i)=>r.pos=i+1);
+    return {group:"GROUP_"+g, table:rows};
+  });
+}
+function renderGroups(){
+  const data=computeStandings();
+  document.getElementById("groupsList").innerHTML=data.map(groupCard).join("")+
+    `<div class="qnote"><i><span class="qdot" style="background:#19E08A"></span>1º e 2º avançam</i><i><span class="qdot" style="background:#F7C948"></span>3º: os 8 melhores avançam</i></div>`;
 }
 
 function renderDay(){
@@ -467,7 +551,7 @@ async function fetchScores(){
     const d=await r.json();
     const map={};
     (d.matches||[]).forEach(m=>{ map[pairKey(m.h,m.a)]={st:m.st,el:m.el,hc:code(m.h),gh:m.gh,ga:m.ga}; });
-    scores=map; updateStatuses();
+    scores=map; updateStatuses(); if(view==="groups")renderGroups();
   }catch(e){}
 }
 function anyLiveOrSoon(){

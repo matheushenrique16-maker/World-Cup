@@ -562,6 +562,9 @@ document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==
 setInterval(()=>{ if(document.visibilityState==="visible"&&anyLiveOrSoon())fetchScores(); },90000);
 fetchScores();
 
+// auto-atualização: o app pega a versão nova sozinho ao abrir (online) e funciona offline
+if("serviceWorker" in navigator){ window.addEventListener("load",()=>{ navigator.serviceWorker.register("sw.js").catch(()=>{}); }); }
+
 render();
 </script>
 </body>

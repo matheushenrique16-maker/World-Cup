@@ -67,6 +67,15 @@
   .clock small{display:block;font-family:var(--inter);font-weight:500;font-size:10px;color:var(--muted);letter-spacing:.3px;margin-top:2px}
 
   .controls{max-width:620px;margin:0 auto;padding:12px 16px 4px}
+  .settings{display:flex;align-items:center;gap:10px;margin-top:10px;flex-wrap:wrap}
+  .langtog{display:inline-flex;background:var(--bg-raise);border:1px solid var(--line);border-radius:11px;overflow:hidden;flex:0 0 auto}
+  .langtog button{appearance:none;-webkit-appearance:none;border:0;background:transparent;color:var(--muted);font-family:var(--inter);font-weight:700;font-size:12px;padding:8px 13px;cursor:pointer;transition:.15s}
+  .langtog button.on{background:linear-gradient(120deg,var(--g1),var(--g2));color:#0a0e1a}
+  .favwrap{display:flex;align-items:center;gap:8px;flex:1;min-width:0}
+  .favlbl{font-size:12px;color:var(--muted);font-weight:600;white-space:nowrap}
+  .favwrap select{flex:1;min-width:0;appearance:none;-webkit-appearance:none;background:var(--bg-raise);color:var(--ink);
+    border:1px solid var(--line);border-radius:11px;padding:8px 30px 8px 11px;font-family:var(--inter);font-weight:600;font-size:13px;cursor:pointer;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2393A0BE' stroke-width='1.6' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 11px center}
   .seg{display:flex;background:var(--bg-raise);border:1px solid var(--line);border-radius:14px;padding:4px;gap:4px}
   .seg button{flex:1;border:0;background:transparent;color:var(--muted);font-family:var(--inter);font-weight:600;font-size:13.5px;padding:10px 8px;border-radius:10px;cursor:pointer;transition:.18s}
   .seg button.on{color:#fff;background:linear-gradient(120deg,var(--vio),var(--cyan));box-shadow:0 8px 22px -10px rgba(124,92,255,.7)}
@@ -218,13 +227,17 @@
       <button id="tabAll" onclick="setView('all')">Seleções</button>
       <button id="tabGroups" onclick="setView('groups')">Grupos</button>
     </div>
+    <div class="settings">
+      <div class="langtog"><button id="langPt" onclick="setLang('pt')">PT</button><button id="langEn" onclick="setLang('en')">EN</button></div>
+      <div class="favwrap"><span id="favLabel" class="favlbl">Minha seleção</span><select id="favSelect" onchange="setFav(this.value)"></select></div>
+    </div>
   </div>
 </header>
 
 <main class="wrap">
   <!-- DAY VIEW -->
   <section id="dayView">
-    <div id="brNext" class="brnext" onclick="goBrazil()"></div>
+    <div id="brNext" class="brnext" onclick="goFav()"></div>
     <div class="daynav">
       <button class="arw" onclick="shiftDay(-1)" aria-label="Dia anterior">‹</button>
       <div class="daylabel">
@@ -252,12 +265,12 @@
 
   <footer>
     <div class="legend">
-      <span><i style="background:#9db4ff"></i>Agendado</span>
-      <span><i style="background:linear-gradient(90deg,#F7C948,#ff7a59)"></i>Ao vivo</span>
-      <span><i style="background:#5B6480"></i>Encerrado</span>
+      <span><i style="background:#9db4ff"></i><span id="lgSched">Agendado</span></span>
+      <span><i style="background:linear-gradient(90deg,#F7C948,#ff7a59)"></i><span id="lgLive">Ao vivo</span></span>
+      <span><i style="background:#5B6480"></i><span id="lgDone">Encerrado</span></span>
     </div>
-    Horários no fuso do seu aparelho (na Irlanda = UTC+1). Os 72 jogos da fase de grupos vão de 11 a 28 de junho de 2026. A FIFA pode ajustar horários — confirme no dia.
-    <div class="cheer">Bora, <b>BRASIL</b>! 🇧🇷</div>
+    <span id="footerNote">Horários no fuso do seu aparelho. Os 72 jogos da fase de grupos vão de 11 a 28 de junho de 2026. A FIFA pode ajustar horários — confirme no dia.</span>
+    <div class="cheer" id="cheer">Bora, <b>BRASIL</b>! 🇧🇷</div>
   </footer>
 </main>
 
@@ -340,6 +353,55 @@ const RAW=[
 [72,"2026-06-28T02:00:00Z",3,"J","Jordânia","Argentina","Dallas","EUA"]
 ];
 
+// nomes por idioma (código -> {pt, en})
+const NAMES={
+ MEX:{pt:"México",en:"Mexico"}, RSA:{pt:"África do Sul",en:"South Africa"}, KOR:{pt:"Coreia do Sul",en:"South Korea"},
+ CZE:{pt:"Tchéquia",en:"Czechia"}, CAN:{pt:"Canadá",en:"Canada"}, BIH:{pt:"Bósnia e Herzegovina",en:"Bosnia & Herzegovina"},
+ QAT:{pt:"Catar",en:"Qatar"}, SUI:{pt:"Suíça",en:"Switzerland"}, BRA:{pt:"Brasil",en:"Brazil"},
+ MAR:{pt:"Marrocos",en:"Morocco"}, HAI:{pt:"Haiti",en:"Haiti"}, SCO:{pt:"Escócia",en:"Scotland"},
+ USA:{pt:"Estados Unidos",en:"United States"}, PAR:{pt:"Paraguai",en:"Paraguay"}, AUS:{pt:"Austrália",en:"Australia"},
+ TUR:{pt:"Turquia",en:"Türkiye"}, GER:{pt:"Alemanha",en:"Germany"}, CUW:{pt:"Curaçao",en:"Curaçao"},
+ CIV:{pt:"Costa do Marfim",en:"Ivory Coast"}, ECU:{pt:"Equador",en:"Ecuador"}, NED:{pt:"Holanda",en:"Netherlands"},
+ JPN:{pt:"Japão",en:"Japan"}, SWE:{pt:"Suécia",en:"Sweden"}, TUN:{pt:"Tunísia",en:"Tunisia"},
+ BEL:{pt:"Bélgica",en:"Belgium"}, EGY:{pt:"Egito",en:"Egypt"}, IRN:{pt:"Irã",en:"Iran"},
+ NZL:{pt:"Nova Zelândia",en:"New Zealand"}, ESP:{pt:"Espanha",en:"Spain"}, CPV:{pt:"Cabo Verde",en:"Cape Verde"},
+ KSA:{pt:"Arábia Saudita",en:"Saudi Arabia"}, URU:{pt:"Uruguai",en:"Uruguay"}, FRA:{pt:"França",en:"France"},
+ SEN:{pt:"Senegal",en:"Senegal"}, IRQ:{pt:"Iraque",en:"Iraq"}, NOR:{pt:"Noruega",en:"Norway"},
+ ARG:{pt:"Argentina",en:"Argentina"}, ALG:{pt:"Argélia",en:"Algeria"}, AUT:{pt:"Áustria",en:"Austria"},
+ JOR:{pt:"Jordânia",en:"Jordan"}, POR:{pt:"Portugal",en:"Portugal"}, COD:{pt:"RD Congo",en:"DR Congo"},
+ UZB:{pt:"Uzbequistão",en:"Uzbekistan"}, COL:{pt:"Colômbia",en:"Colombia"}, ENG:{pt:"Inglaterra",en:"England"},
+ CRO:{pt:"Croácia",en:"Croatia"}, GHA:{pt:"Gana",en:"Ghana"}, PAN:{pt:"Panamá",en:"Panama"}
+};
+const CITY={"Cidade do México":"Mexico City","São Francisco (Bay Area)":"San Francisco (Bay Area)","Nova York/Nova Jersey":"New York/New Jersey","Filadélfia":"Philadelphia"};
+const CTRY={"México":"Mexico","Canadá":"Canada","EUA":"USA"};
+
+const STR={
+ pt:{tab_day:"Por dia",tab_all:"Seleções",tab_groups:"Grupos",all_teams:"Todas as seleções",games_one:"jogo",games_many:"jogos",
+  my_team:"Minha seleção",today:"Hoje",back_today:"Voltar para hoje",no_games_day:"Nenhum jogo neste dia",use_arrows:"Use as setas para navegar entre os dias.",
+  groups_over:"Fase de grupos encerrada",groups_over_sub:"Os 72 jogos da fase de grupos foram de 11 a 28 de junho.",next_game:"Próximo jogo:",no_games:"Sem jogos",choose_other:"Escolha outra seleção.",
+  group:"Grupo",th_team:"Time",th_p:"J",th_w:"V",th_d:"E",th_l:"D",th_gd:"SG",th_pts:"P",adv12:"1º e 2º avançam",adv3:"3º: os 8 melhores avançam",
+  st_sched:"Agendado",st_live:"Ao vivo",st_done:"Encerrado",st_postponed:"Adiado",st_cancelled:"Cancelado",st_suspended:"Interrompido",st_abandoned:"Abandonado",
+  halftime:"Intervalo",extratime:"Prorrogação",penalties:"Pênaltis",live:"Ao vivo",inprogress:"Em andamento",pen_decided:"decidido nos pênaltis",after_et:"após prorrogação",
+  starts_in:"começa em",min:"min",day:"dia",days:"dias",in_:"em",sp_next:"Próximo jogo",sp_live:"Ao vivo agora",sp_last:"Último jogo",see_games:"ver jogos ›",
+  footer:"Horários no fuso do seu aparelho. Os 72 jogos da fase de grupos vão de 11 a 28 de junho de 2026. A FIFA pode ajustar horários — confirme no dia.",go:"Vai"},
+ en:{tab_day:"By day",tab_all:"Teams",tab_groups:"Groups",all_teams:"All teams",games_one:"game",games_many:"games",
+  my_team:"My team",today:"Today",back_today:"Back to today",no_games_day:"No matches on this day",use_arrows:"Use the arrows to browse days.",
+  groups_over:"Group stage finished",groups_over_sub:"The 72 group-stage matches ran June 11–28.",next_game:"Next match:",no_games:"No matches",choose_other:"Pick another team.",
+  group:"Group",th_team:"Team",th_p:"P",th_w:"W",th_d:"D",th_l:"L",th_gd:"GD",th_pts:"Pts",adv12:"Top 2 advance",adv3:"3rd: 8 best advance",
+  st_sched:"Scheduled",st_live:"Live",st_done:"Finished",st_postponed:"Postponed",st_cancelled:"Cancelled",st_suspended:"Suspended",st_abandoned:"Abandoned",
+  halftime:"Half-time",extratime:"Extra time",penalties:"Penalties",live:"Live",inprogress:"In progress",pen_decided:"decided on penalties",after_et:"after extra time",
+  starts_in:"starts in",min:"min",day:"day",days:"days",in_:"in",sp_next:"Next match",sp_live:"Live now",sp_last:"Last match",see_games:"see games ›",
+  footer:"Times shown in your device's timezone. The 72 group-stage matches run June 11–28, 2026. FIFA may adjust times — check on the day.",go:"Go"}
+};
+let lang = (localStorage.getItem("copa_lang")==="en") ? "en" : "pt";
+let fav = localStorage.getItem("copa_fav") || "BRA";
+function t(k){const o=STR[lang]||STR.pt; return (k in o)?o[k]:(STR.pt[k]!==undefined?STR.pt[k]:k);}
+function teamName(c){const n=NAMES[c]; return n?(lang==="en"?n.en:n.pt):c;}
+function cityName(c){return lang==="en"?(CITY[c]||c):c;}
+function ctryName(c){return lang==="en"?(CTRY[c]||c):c;}
+function isFav(m){return m.hc===fav||m.ac===fav;}
+function roundLabel(r){return lang==="en"?("Matchday "+r):(r+"ª rodada");}
+
 /* ---- placar ao vivo (API-Football via proxy Cloudflare) ---- */
 const SCORES_URL = "https://copa-placar.matheushenrique-16.workers.dev"; // proxy Cloudflare (football-data.org)
 const LIVE = new Set(["1H","2H","HT","ET","BT","P","LIVE","INT","IN_PLAY","PAUSED"]);
@@ -372,12 +434,13 @@ function norm(s){return (s||"").toLowerCase().normalize("NFD").replace(/[\u0300-
 function code(name){return CODE[norm(name)]||norm(name);}
 function pairKey(h,a){return [code(h),code(a)].sort().join("-");}
 
-const M=RAW.map(r=>({n:r[0],d:new Date(r[1]),ms:Date.parse(r[1]),r:r[2],g:r[3],h:r[4],a:r[5],city:r[6],ctry:r[7],br:(r[4]==="Brasil"||r[5]==="Brasil"),pk:pairKey(r[4],r[5]),hc:code(r[4])}))
+const M=RAW.map(r=>({n:r[0],d:new Date(r[1]),ms:Date.parse(r[1]),r:r[2],g:r[3],h:r[4],a:r[5],city:r[6],ctry:r[7],pk:pairKey(r[4],r[5]),hc:code(r[4]),ac:code(r[5])}))
             .sort((x,y)=>x.ms-y.ms);
 
-// mapa código -> {nome PT, bandeira}, montado a partir dos próprios jogos
+// mapa código -> {pt, en, bandeira}
 const TEAM={};
-M.forEach(m=>{ TEAM[code(m.h)]={pt:m.h,flag:FLAG[m.h]||"⚽"}; TEAM[code(m.a)]={pt:m.a,flag:FLAG[m.a]||"⚽"}; });
+Object.keys(NAMES).forEach(c=>{ TEAM[c]={pt:NAMES[c].pt,en:NAMES[c].en,flag:FLAG[NAMES[c].pt]||"⚽"}; });
+function flag(c){return (TEAM[c]&&TEAM[c].flag)||"⚽";}
 
 // quais seleções compõem cada grupo (A..L)
 const ROSTER={};
@@ -389,57 +452,56 @@ let sel=startOfDay(new Date());
 function startOfDay(d){return new Date(d.getFullYear(),d.getMonth(),d.getDate());}
 function ymd(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
 function sameDay(a,b){return ymd(a)===ymd(b);}
-function fmtTime(d){return d.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});}
+function loc(){return lang==="en"?"en-US":"pt-BR";}
+function fmtTime(d){return d.toLocaleTimeString(loc(),{hour:"2-digit",minute:"2-digit",hourCycle:"h23"});}
 function cap(s){return s.charAt(0).toUpperCase()+s.slice(1);}
-function longDate(d){return cap(d.toLocaleDateString("pt-BR",{weekday:"long"}))+" · "+d.toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit"});}
-function relTxt(ms){const m=Math.round(ms/60000);if(m<60)return"começa em "+m+" min";const h=Math.floor(m/60),mm=m%60;if(h<24)return"começa em "+h+"h"+(mm?(" "+mm+"min"):"");const dd=Math.floor(h/24);return"em "+dd+(dd>1?" dias":" dia");}
+function longDate(d){return cap(d.toLocaleDateString(loc(),{weekday:"long"}))+" · "+d.toLocaleDateString(loc(),{day:"2-digit",month:"2-digit"});}
+function relTxt(ms){const m=Math.round(ms/60000);if(m<60)return t('starts_in')+" "+m+" "+t('min');const h=Math.floor(m/60),mm=m%60;if(h<24)return t('starts_in')+" "+h+"h"+(mm?(" "+mm+t('min')):"");const dd=Math.floor(h/24);return t('in_')+" "+dd+" "+(dd>1?t('days'):t('day'));}
 
 function card(m){
-  const fl=t=>FLAG[t]||"⚽";
-  return `<div class="card${m.br?' br':''}" data-ko="${m.ms}" data-pk="${m.pk}" data-hc="${m.hc}">
+  return `<div class="card${isFav(m)?' br':''}" data-ko="${m.ms}" data-pk="${m.pk}" data-hc="${m.hc}">
     <div class="crow1">
-      <div class="chips"><span class="chip g">Grupo ${m.g}</span><span class="chip">${m.r}ª rodada</span></div>
+      <div class="chips"><span class="chip g">${t('group')} ${m.g}</span><span class="chip">${roundLabel(m.r)}</span></div>
       <span class="badge js-status"><span class="dot"></span></span>
     </div>
     <div class="crow2">
       <div class="ko">${fmtTime(m.d)}</div>
       <div class="teams">
-        <div class="team"><span class="fl">${fl(m.h)}</span><span class="nm">${m.h}</span><span class="sc js-sh"></span></div>
-        <div class="team"><span class="fl">${fl(m.a)}</span><span class="nm">${m.a}</span><span class="sc js-sa"></span></div>
+        <div class="team"><span class="fl">${flag(m.hc)}</span><span class="nm">${teamName(m.hc)}</span><span class="sc js-sh"></span></div>
+        <div class="team"><span class="fl">${flag(m.ac)}</span><span class="nm">${teamName(m.ac)}</span><span class="sc js-sa"></span></div>
       </div>
     </div>
-    <div class="meta">📍 ${m.city} · ${m.ctry}</div>
+    <div class="meta">📍 ${cityName(m.city)} · ${ctryName(m.ctry)}</div>
     <div class="cd js-count"></div>
   </div>`;
 }
 
-function brSpotlight(){
+function favSpotlight(){
   const now=Date.now();
-  const br=M.filter(m=>m.br).sort((a,b)=>a.ms-b.ms);
-  if(!br.length)return null;
-  const live=br.find(m=>{const s=scores[m.pk];return s&&LIVE.has(s.st);});
+  const list=M.filter(isFav).sort((a,b)=>a.ms-b.ms);
+  if(!list.length)return null;
+  const live=list.find(m=>{const s=scores[m.pk];return s&&LIVE.has(s.st);});
   if(live)return live;
-  const next=br.find(m=>{const s=scores[m.pk];return !(s&&DONE.has(s.st)) && m.ms>now-3*3600000;});
+  const next=list.find(m=>{const s=scores[m.pk];return !(s&&DONE.has(s.st)) && m.ms>now-3*3600000;});
   if(next)return next;
-  return br[br.length-1];
+  return list[list.length-1];
 }
 function renderBrNext(){
   const el=document.getElementById("brNext"); if(!el)return;
-  const m=brSpotlight(); if(!m){el.style.display="none";el.innerHTML="";return;}
+  const m=favSpotlight(); if(!m){el.style.display="none";el.innerHTML="";return;}
   el.style.display="block";
-  const fl=t=>FLAG[t]||"⚽";
   const sk=scores[m.pk], now=Date.now();
-  let label="Próximo jogo do Brasil", info="", live=false;
+  let label=t('sp_next'), info="", live=false;
   let gh=null,ga=null;
   if(sk){const sh=(sk.hc===m.hc);gh=sh?sk.gh:sk.ga;ga=sh?sk.ga:sk.gh;}
-  if(sk&&LIVE.has(sk.st)){live=true;label="Brasil ao vivo";info=liveLabel(sk)+" · "+m.city;}
-  else if(sk&&DONE.has(sk.st)){label="Último jogo do Brasil";info="Encerrado · "+m.city;}
-  else if(m.ms>now){const diff=m.ms-now;info=(diff<24*3600000?relTxt(diff):longDate(m.d)+" · "+fmtTime(m.d))+" · "+m.city;}
-  else{live=true;label="Brasil ao vivo";info="Em andamento · "+m.city;}
+  if(sk&&LIVE.has(sk.st)){live=true;label=t('sp_live');info=liveLabel(sk)+" · "+cityName(m.city);}
+  else if(sk&&DONE.has(sk.st)){label=t('sp_last');info=t('st_done')+" · "+cityName(m.city);}
+  else if(m.ms>now){const diff=m.ms-now;info=(diff<24*3600000?relTxt(diff):longDate(m.d)+" · "+fmtTime(m.d))+" · "+cityName(m.city);}
+  else{live=true;label=t('sp_live');info=t('inprogress')+" · "+cityName(m.city);}
   const mid=(gh!=null&&ga!=null)
-    ? `<span class="bn-team"><span class="fl">${fl(m.h)}</span>${m.h}</span><span class="bn-sc">${gh}<span class="x">×</span>${ga}</span><span class="bn-team r">${m.a}<span class="fl">${fl(m.a)}</span></span>`
-    : `<span class="bn-team"><span class="fl">${fl(m.h)}</span>${m.h}</span><span class="bn-x">×</span><span class="bn-team r">${m.a}<span class="fl">${fl(m.a)}</span></span>`;
-  el.innerHTML=`<div class="bn-top"><span class="bn-flag">🇧🇷</span><span class="bn-label">${label}</span>${live?'<span class="bn-live">● AO VIVO</span>':'<span class="bn-go">ver jogos ›</span>'}</div>
+    ? `<span class="bn-team"><span class="fl">${flag(m.hc)}</span>${teamName(m.hc)}</span><span class="bn-sc">${gh}<span class="x">×</span>${ga}</span><span class="bn-team r">${teamName(m.ac)}<span class="fl">${flag(m.ac)}</span></span>`
+    : `<span class="bn-team"><span class="fl">${flag(m.hc)}</span>${teamName(m.hc)}</span><span class="bn-x">×</span><span class="bn-team r">${teamName(m.ac)}<span class="fl">${flag(m.ac)}</span></span>`;
+  el.innerHTML=`<div class="bn-top"><span class="bn-flag">${flag(fav)}</span><span class="bn-label">${label}</span>${live?`<span class="bn-live">● ${t('st_live').toUpperCase()}</span>`:`<span class="bn-go">${t('see_games')}</span>`}</div>
     <div class="bn-mid">${mid}</div>
     <div class="bn-info">${info}</div>`;
 }
@@ -457,21 +519,20 @@ function render(){
   updateStatuses();
 }
 
-function groupLabel(gr){const m=(gr||"").match(/([A-La-l])$/);return"Grupo "+(m?m[1].toUpperCase():(gr||""));}
+function groupLabel(gr){const m=(gr||"").match(/([A-La-l])$/);return t('group')+" "+(m?m[1].toUpperCase():(gr||""));}
 function groupCard(g){
-  const rows=(g.table||[]).map(t=>{
-    const c=code(t.name),info=TEAM[c],fl=info?info.flag:"⚽",nm=info?info.pt:t.name;
-    const br=(c==="BRA"),q=t.pos<=2?"q1":(t.pos===3?"q3":""),sg=(t.gd>0?"+":"")+t.gd;
-    return `<tr class="${br?'brrow ':''}${q}">
-      <td class="pos">${t.pos}</td>
-      <td class="tname"><span class="fl">${fl}</span><span class="nm">${nm}</span></td>
-      <td>${t.pld}</td><td>${t.w}</td><td>${t.d}</td><td>${t.l}</td>
-      <td>${sg}</td><td class="pts">${t.pts}</td></tr>`;
+  const rows=(g.table||[]).map(r=>{
+    const c=r.code,nm=teamName(c),isf=(c===fav),q=r.pos<=2?"q1":(r.pos===3?"q3":""),sg=(r.gd>0?"+":"")+r.gd;
+    return `<tr class="${isf?'brrow ':''}${q}">
+      <td class="pos">${r.pos}</td>
+      <td class="tname"><span class="fl">${flag(c)}</span><span class="nm">${nm}</span></td>
+      <td>${r.pld}</td><td>${r.w}</td><td>${r.d}</td><td>${r.l}</td>
+      <td>${sg}</td><td class="pts">${r.pts}</td></tr>`;
   }).join("");
   return `<div class="gcard"><div class="gtitle">${groupLabel(g.group)}</div>
     <table class="gtbl">
       <colgroup><col class="cpos"><col class="cn"><col class="c2"><col class="c2"><col class="c2"><col class="c2"><col class="csg"><col class="cp"></colgroup>
-      <thead><tr><th class="pos">#</th><th class="tname">Time</th><th>J</th><th>V</th><th>E</th><th>D</th><th>SG</th><th class="pts">P</th></tr></thead>
+      <thead><tr><th class="pos">#</th><th class="tname">${t('th_team')}</th><th>${t('th_p')}</th><th>${t('th_w')}</th><th>${t('th_d')}</th><th>${t('th_l')}</th><th>${t('th_gd')}</th><th class="pts">${t('th_pts')}</th></tr></thead>
       <tbody>${rows}</tbody></table></div>`;
 }
 function computeStandings(){
@@ -486,8 +547,8 @@ function computeStandings(){
     if(hg>ag){H.w++;H.pts+=3;A.l++;} else if(hg<ag){A.w++;A.pts+=3;H.l++;} else {H.d++;A.d++;H.pts++;A.pts++;}
   });
   return Object.keys(G).sort().map(g=>{
-    const rows=Object.values(G[g]).map(t=>({...t,gd:t.gf-t.ga,name:(TEAM[t.code]?.pt)||t.code}));
-    rows.sort((a,b)=> b.pts-a.pts || b.gd-a.gd || b.gf-a.gf || a.name.localeCompare(b.name,"pt-BR"));
+    const rows=Object.values(G[g]).map(x=>({...x,gd:x.gf-x.ga,name:teamName(x.code)}));
+    rows.sort((a,b)=> b.pts-a.pts || b.gd-a.gd || b.gf-a.gf || a.name.localeCompare(b.name,loc()));
     rows.forEach((r,i)=>r.pos=i+1);
     return {group:"GROUP_"+g, table:rows};
   });
@@ -495,24 +556,24 @@ function computeStandings(){
 function renderGroups(){
   const data=computeStandings();
   document.getElementById("groupsList").innerHTML=data.map(groupCard).join("")+
-    `<div class="qnote"><i><span class="qdot" style="background:#19E08A"></span>1º e 2º avançam</i><i><span class="qdot" style="background:#F7C948"></span>3º: os 8 melhores avançam</i></div>`;
+    `<div class="qnote"><i><span class="qdot" style="background:#19E08A"></span>${t('adv12')}</i><i><span class="qdot" style="background:#F7C948"></span>${t('adv3')}</i></div>`;
 }
 
 function renderDay(){
   const today=startOfDay(new Date());
   document.getElementById("dayWd").textContent=longDate(sel);
   const pill=document.getElementById("dayPill");
-  if(sameDay(sel,today)) pill.innerHTML='<span class="today-pill">Hoje</span>';
-  else pill.innerHTML='<span class="reset" onclick="goToday()">Voltar para hoje</span>';
+  if(sameDay(sel,today)) pill.innerHTML=`<span class="today-pill">${t('today')}</span>`;
+  else pill.innerHTML=`<span class="reset" onclick="goToday()">${t('back_today')}</span>`;
 
   const games=M.filter(m=>sameDay(m.d,sel));
   const list=document.getElementById("dayList");
   if(!games.length){
     const next=M.find(m=>m.ms>=sel.getTime());
     const after=ymd(sel)>"2026-06-28";
-    list.innerHTML=`<div class="empty"><div class="big">${after?"Fase de grupos encerrada":"Nenhum jogo neste dia"}</div>
-      ${after?"Os 72 jogos da fase de grupos foram de 11 a 28 de junho.":"Use as setas para navegar entre os dias."}
-      ${next?`<div class="nx">Próximo jogo: <b>${longDate(startOfDay(next.d))}</b>, ${fmtTime(next.d)} — ${next.h} × ${next.a}</div>`:""}</div>`;
+    list.innerHTML=`<div class="empty"><div class="big">${after?t('groups_over'):t('no_games_day')}</div>
+      ${after?t('groups_over_sub'):t('use_arrows')}
+      ${next?`<div class="nx">${t('next_game')} <b>${longDate(startOfDay(next.d))}</b>, ${fmtTime(next.d)} — ${teamName(next.hc)} × ${teamName(next.ac)}</div>`:""}</div>`;
     return;
   }
   list.innerHTML=games.map(card).join("");
@@ -520,22 +581,22 @@ function renderDay(){
 
 function renderAll(){
   const sel2=document.getElementById("teamFilter").value;
-  const games=sel2==="__all__"?M:M.filter(m=>m.h===sel2||m.a===sel2);
-  document.getElementById("allCount").textContent=games.length+(games.length===1?" jogo":" jogos");
+  const games=sel2==="__all__"?M:M.filter(m=>m.hc===sel2||m.ac===sel2);
+  document.getElementById("allCount").textContent=games.length+" "+(games.length===1?t('games_one'):t('games_many'));
   let html="",cur="";
   games.forEach(m=>{
     const k=ymd(m.d);
     if(k!==cur){cur=k;html+=`<div class="datehead">${longDate(startOfDay(m.d))}</div>`;}
     html+=card(m);
   });
-  document.getElementById("allList").innerHTML=html||`<div class="empty"><div class="big">Sem jogos</div>Escolha outra seleção.</div>`;
+  document.getElementById("allList").innerHTML=html||`<div class="empty"><div class="big">${t('no_games')}</div>${t('choose_other')}</div>`;
 }
 
 function liveLabel(sk){
-  if(sk.st==="HT"||sk.st==="PAUSED")return"Intervalo";
-  if(sk.st==="ET"||sk.st==="BT")return"Prorrogação"+(sk.el?` ${sk.el}'`:"");
-  if(sk.st==="P")return"Pênaltis";
-  return sk.el?`${sk.el}'`:"Ao vivo";
+  if(sk.st==="HT"||sk.st==="PAUSED")return t('halftime');
+  if(sk.st==="ET"||sk.st==="BT")return t('extratime')+(sk.el?` ${sk.el}'`:"");
+  if(sk.st==="P")return t('penalties');
+  return sk.el?`${sk.el}'`:t('live');
 }
 function updateStatuses(){
   const now=Date.now();
@@ -550,22 +611,22 @@ function updateStatuses(){
     if(sk){const sameHome=(sk.hc===el.dataset.hc); gh=sameHome?sk.gh:sk.ga; ga=sameHome?sk.ga:sk.gh;}
     let cls,txt;
     if(sk && LIVE.has(sk.st)){
-      cls="live";txt="● Ao vivo";el.classList.add("live");
+      cls="live";txt="● "+t('st_live');el.classList.add("live");
       setScore(gh,ga);c.textContent=liveLabel(sk);c.classList.add("hot");
     } else if(sk && DONE.has(sk.st)){
-      cls="done";txt="Encerrado";el.classList.add("done");
-      setScore(gh,ga);c.textContent=(sk.st==="PEN"?"decidido nos pênaltis":sk.st==="AET"?"após prorrogação":"");c.classList.remove("hot");
+      cls="done";txt=t('st_done');el.classList.add("done");
+      setScore(gh,ga);c.textContent=(sk.st==="PEN"?t('pen_decided'):sk.st==="AET"?t('after_et'):"");c.classList.remove("hot");
     } else if(sk && (sk.st==="PST"||sk.st==="CANC"||sk.st==="ABD"||sk.st==="SUSP"||sk.st==="POSTPONED"||sk.st==="CANCELLED"||sk.st==="SUSPENDED")){
-      cls="soon";txt=((sk.st==="PST"||sk.st==="POSTPONED")?"Adiado":(sk.st==="CANC"||sk.st==="CANCELLED")?"Cancelado":sk.st==="ABD"?"Abandonado":"Interrompido");
+      cls="soon";txt=((sk.st==="PST"||sk.st==="POSTPONED")?t('st_postponed'):(sk.st==="CANC"||sk.st==="CANCELLED")?t('st_cancelled'):sk.st==="ABD"?t('st_abandoned'):t('st_suspended'));
       setScore(null,null);c.textContent="";c.classList.remove("hot");
     } else {
       setScore(null,null);
-      if(now<ko){cls="soon";txt="Agendado";
+      if(now<ko){cls="soon";txt=t('st_sched');
         const diff=ko-now;
         if(diff<24*3600000){c.textContent=relTxt(diff);c.classList.toggle("hot",diff<3600000);}
         else{c.textContent="";c.classList.remove("hot");}
-      } else if(now<end){cls="live";txt="● Ao vivo";el.classList.add("live");c.textContent="Em andamento";c.classList.add("hot");}
-      else {cls="done";txt="Encerrado";el.classList.add("done");c.textContent="";c.classList.remove("hot");}
+      } else if(now<end){cls="live";txt="● "+t('st_live');el.classList.add("live");c.textContent=t('inprogress');c.classList.add("hot");}
+      else {cls="done";txt=t('st_done');el.classList.add("done");c.textContent="";c.classList.remove("hot");}
     }
     b.className="badge js-status "+cls;
     b.innerHTML=(cls==="live"?'':'<span class="dot"></span>')+txt;
@@ -576,19 +637,42 @@ function updateStatuses(){
 function setView(v){view=v;render();window.scrollTo({top:0});}
 function shiftDay(n){sel=new Date(sel.getFullYear(),sel.getMonth(),sel.getDate()+n);render();}
 function goToday(){sel=startOfDay(new Date());render();}
-function goBrazil(){view="all";document.getElementById("teamFilter").value="Brasil";render();window.scrollTo({top:0});}
+function goFav(){view="all";document.getElementById("teamFilter").value=fav;render();window.scrollTo({top:0});}
 
-// build team filter
-(function(){
-  const teams=[...new Set(M.flatMap(m=>[m.h,m.a]))].sort((a,b)=>a.localeCompare(b,"pt-BR"));
-  const sel=document.getElementById("teamFilter");
-  sel.innerHTML='<option value="__all__">Todas as seleções</option>'+teams.map(t=>`<option value="${t}">${FLAG[t]||""} ${t}</option>`).join("");
-})();
+// ---- seletores de time e idioma ----
+function teamCodesSorted(){return Object.keys(NAMES).sort((a,b)=>teamName(a).localeCompare(teamName(b),loc()));}
+function buildTeamFilter(){
+  const s=document.getElementById("teamFilter"); const prev=s.value;
+  s.innerHTML=`<option value="__all__">${t('all_teams')}</option>`+teamCodesSorted().map(c=>`<option value="${c}">${flag(c)} ${teamName(c)}</option>`).join("");
+  s.value=(prev&&[...s.options].some(o=>o.value===prev))?prev:"__all__";
+}
+function buildFavSelect(){
+  const s=document.getElementById("favSelect");
+  s.innerHTML=teamCodesSorted().map(c=>`<option value="${c}">${flag(c)} ${teamName(c)}</option>`).join("");
+  s.value=fav;
+}
+function renderCheer(){document.getElementById("cheer").innerHTML=`${t('go')}, <b>${teamName(fav).toUpperCase()}</b>! ${flag(fav)}`;}
+function applyStaticText(){
+  document.documentElement.lang=lang;
+  document.getElementById("tabDay").textContent=t('tab_day');
+  document.getElementById("tabAll").textContent=t('tab_all');
+  document.getElementById("tabGroups").textContent=t('tab_groups');
+  document.getElementById("favLabel").textContent=t('my_team');
+  document.getElementById("footerNote").textContent=t('footer');
+  document.getElementById("lgSched").textContent=t('st_sched');
+  document.getElementById("lgLive").textContent=t('st_live');
+  document.getElementById("lgDone").textContent=t('st_done');
+  document.getElementById("langPt").classList.toggle("on",lang==="pt");
+  document.getElementById("langEn").classList.toggle("on",lang==="en");
+  buildTeamFilter(); buildFavSelect(); renderCheer();
+}
+function setLang(l){lang=(l==="en")?"en":"pt";localStorage.setItem("copa_lang",lang);applyStaticText();render();}
+function setFav(c){fav=c;localStorage.setItem("copa_fav",c);buildFavSelect();renderCheer();render();}
 
 // clock + timezone
 const tz=Intl.DateTimeFormat().resolvedOptions().timeZone||"";
-document.getElementById("tz").textContent=tz?tz.replace("_"," "):"seu fuso";
-function tick(){document.getElementById("clock").textContent=new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit",second:"2-digit"});}
+document.getElementById("tz").textContent=tz?tz.replace("_"," "):"";
+function tick(){document.getElementById("clock").textContent=new Date().toLocaleTimeString(loc(),{hour:"2-digit",minute:"2-digit",second:"2-digit",hourCycle:"h23"});}
 tick();setInterval(tick,1000);
 setInterval(updateStatuses,20000);
 
@@ -615,6 +699,7 @@ fetchScores();
 // auto-atualização: o app pega a versão nova sozinho ao abrir (online) e funciona offline
 if("serviceWorker" in navigator){ window.addEventListener("load",()=>{ navigator.serviceWorker.register("sw.js").catch(()=>{}); }); }
 
+applyStaticText();
 render();
 </script>
 </body>

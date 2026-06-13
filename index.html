@@ -168,6 +168,24 @@
   .qnote{margin-top:10px;font-size:10.5px;color:var(--muted);line-height:1.45;display:flex;flex-wrap:wrap;gap:10px}
   .qnote i{font-style:normal}
   .qdot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;vertical-align:0}
+  /* card "próximo jogo do Brasil" */
+  .brnext{display:block;width:100%;text-align:left;cursor:pointer;-webkit-tap-highlight-color:transparent;
+    border:1px solid rgba(46,204,113,.4);background:linear-gradient(135deg,rgba(0,156,59,.18),rgba(255,223,0,.06));
+    border-radius:16px;padding:12px 14px;margin-bottom:14px;box-shadow:inset 0 1px 0 rgba(255,255,255,.06)}
+  .brnext:active{transform:scale(.99)}
+  .bn-top{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:#7CE0A8}
+  .bn-flag{font-size:15px}
+  .bn-label{flex:1}
+  .bn-live{color:var(--gold)}
+  .bn-go{color:#7CE0A8;opacity:.85;font-weight:700}
+  .bn-mid{display:flex;align-items:center;justify-content:center;gap:10px;margin:9px 0 6px;font-family:var(--sora);font-weight:700;font-size:15.5px}
+  .bn-team{display:flex;align-items:center;gap:7px;flex:1;min-width:0}
+  .bn-team.r{justify-content:flex-end;text-align:right}
+  .bn-mid .fl{font-size:19px;flex:0 0 auto}
+  .bn-sc{font-family:var(--sora);font-weight:800;font-size:18px;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .bn-sc .x{color:var(--faint);margin:0 5px;font-weight:600}
+  .bn-x{color:var(--faint);font-weight:600;font-size:15px}
+  .bn-info{text-align:center;font-size:12px;color:#cfe9d8;font-weight:600}
   .empty{margin-top:26px;text-align:center;color:var(--muted);background:var(--bg-raise);border:1px dashed var(--line);border-radius:16px;padding:30px 20px}
   .empty .big{font-family:var(--sora);font-weight:700;font-size:16px;color:var(--ink);margin-bottom:6px}
   .empty .nx{margin-top:14px;font-size:13px}
@@ -200,13 +218,13 @@
       <button id="tabAll" onclick="setView('all')">Seleções</button>
       <button id="tabGroups" onclick="setView('groups')">Grupos</button>
     </div>
-    <button class="br-btn" onclick="goBrazil()"><span class="flag">🇧🇷</span> Ver os jogos do Brasil</button>
   </div>
 </header>
 
 <main class="wrap">
   <!-- DAY VIEW -->
   <section id="dayView">
+    <div id="brNext" class="brnext" onclick="goBrazil()"></div>
     <div class="daynav">
       <button class="arw" onclick="shiftDay(-1)" aria-label="Dia anterior">‹</button>
       <div class="daylabel">
@@ -395,6 +413,37 @@ function card(m){
   </div>`;
 }
 
+function brSpotlight(){
+  const now=Date.now();
+  const br=M.filter(m=>m.br).sort((a,b)=>a.ms-b.ms);
+  if(!br.length)return null;
+  const live=br.find(m=>{const s=scores[m.pk];return s&&LIVE.has(s.st);});
+  if(live)return live;
+  const next=br.find(m=>{const s=scores[m.pk];return !(s&&DONE.has(s.st)) && m.ms>now-3*3600000;});
+  if(next)return next;
+  return br[br.length-1];
+}
+function renderBrNext(){
+  const el=document.getElementById("brNext"); if(!el)return;
+  const m=brSpotlight(); if(!m){el.style.display="none";el.innerHTML="";return;}
+  el.style.display="block";
+  const fl=t=>FLAG[t]||"⚽";
+  const sk=scores[m.pk], now=Date.now();
+  let label="Próximo jogo do Brasil", info="", live=false;
+  let gh=null,ga=null;
+  if(sk){const sh=(sk.hc===m.hc);gh=sh?sk.gh:sk.ga;ga=sh?sk.ga:sk.gh;}
+  if(sk&&LIVE.has(sk.st)){live=true;label="Brasil ao vivo";info=liveLabel(sk)+" · "+m.city;}
+  else if(sk&&DONE.has(sk.st)){label="Último jogo do Brasil";info="Encerrado · "+m.city;}
+  else if(m.ms>now){const diff=m.ms-now;info=(diff<24*3600000?relTxt(diff):longDate(m.d)+" · "+fmtTime(m.d))+" · "+m.city;}
+  else{live=true;label="Brasil ao vivo";info="Em andamento · "+m.city;}
+  const mid=(gh!=null&&ga!=null)
+    ? `<span class="bn-team"><span class="fl">${fl(m.h)}</span>${m.h}</span><span class="bn-sc">${gh}<span class="x">×</span>${ga}</span><span class="bn-team r">${m.a}<span class="fl">${fl(m.a)}</span></span>`
+    : `<span class="bn-team"><span class="fl">${fl(m.h)}</span>${m.h}</span><span class="bn-x">×</span><span class="bn-team r">${m.a}<span class="fl">${fl(m.a)}</span></span>`;
+  el.innerHTML=`<div class="bn-top"><span class="bn-flag">🇧🇷</span><span class="bn-label">${label}</span>${live?'<span class="bn-live">● AO VIVO</span>':'<span class="bn-go">ver jogos ›</span>'}</div>
+    <div class="bn-mid">${mid}</div>
+    <div class="bn-info">${info}</div>`;
+}
+
 function render(){
   document.getElementById("tabDay").classList.toggle("on",view==="day");
   document.getElementById("tabAll").classList.toggle("on",view==="all");
@@ -402,7 +451,7 @@ function render(){
   document.getElementById("dayView").style.display=view==="day"?"block":"none";
   document.getElementById("allView").style.display=view==="all"?"block":"none";
   document.getElementById("groupsView").style.display=view==="groups"?"block":"none";
-  if(view==="day")renderDay();
+  if(view==="day"){renderDay();renderBrNext();}
   else if(view==="all")renderAll();
   else renderGroups();
   updateStatuses();
@@ -521,6 +570,7 @@ function updateStatuses(){
     b.className="badge js-status "+cls;
     b.innerHTML=(cls==="live"?'':'<span class="dot"></span>')+txt;
   });
+  if(view==="day")renderBrNext();
 }
 
 function setView(v){view=v;render();window.scrollTo({top:0});}

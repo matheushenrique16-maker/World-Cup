@@ -8,6 +8,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Copa 2026">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
@@ -211,6 +213,18 @@
     body::before,.spectrum,.badge.live,.badge.live .dot{animation:none}
   }
   @media(max-width:380px){.ko{font-size:26px;min-width:64px}.team{font-size:15px}}
+  .livestrip{max-width:620px;margin:0 auto 2px;padding:10px 16px 0}
+  .lshead{display:flex;align-items:center;gap:7px;font-family:var(--sora);font-weight:800;font-size:11px;letter-spacing:.6px;text-transform:uppercase;color:var(--gold);margin-bottom:8px}
+  .lsdot{width:8px;height:8px;border-radius:50%;background:var(--gold);animation:lspulse 1.4s infinite}
+  @keyframes lspulse{0%{box-shadow:0 0 0 0 rgba(247,201,72,.55)}70%{box-shadow:0 0 0 7px rgba(247,201,72,0)}100%{box-shadow:0 0 0 0 rgba(247,201,72,0)}}
+  .lsrow{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch}
+  .lsrow::-webkit-scrollbar{display:none}
+  .lchip{flex:0 0 auto;display:flex;align-items:center;gap:8px;background:linear-gradient(135deg,rgba(247,201,72,.16),rgba(255,94,94,.08));border:1px solid rgba(247,201,72,.38);border-radius:13px;padding:9px 12px;cursor:pointer;color:var(--ink);font-family:var(--inter)}
+  .lchip .lf{font-size:16px;line-height:1}
+  .lchip .lsc{font-family:var(--sora);font-weight:800;font-size:15px;font-variant-numeric:tabular-nums}
+  .lchip .lx{color:var(--faint);margin:0 4px;font-weight:600}
+  .lchip .lmin{font-size:11px;font-weight:700;color:var(--gold);margin-left:2px}
+  @media(prefers-reduced-motion:reduce){.lsdot{animation:none}}
 </style>
 </head>
 <body>
@@ -235,6 +249,7 @@
 </header>
 
 <main class="wrap">
+  <div id="liveStrip" class="livestrip" style="display:none"></div>
   <!-- DAY VIEW -->
   <section id="dayView">
     <div id="brNext" class="brnext" onclick="goFav()"></div>
@@ -598,6 +613,64 @@ function liveLabel(sk){
   if(sk.st==="P")return t('penalties');
   return sk.el?`${sk.el}'`:t('live');
 }
+function goMatchDay(ms){ sel=startOfDay(new Date(ms)); view="day"; render(); window.scrollTo({top:0}); }
+function renderLiveStrip(){
+  const el=document.getElementById("liveStrip"); if(!el)return;
+  const lives=M.filter(m=>{const s=scores[m.pk];return s&&LIVE.has(s.st);}).sort((a,b)=>a.ms-b.ms);
+  if(!lives.length){el.style.display="none";el.innerHTML="";return;}
+  el.style.display="block";
+  const chips=lives.map(m=>{
+    const sk=scores[m.pk], sh=(sk.hc===m.hc), hg=sh?sk.gh:sk.ga, ag=sh?sk.ga:sk.gh;
+    return `<button class="lchip" onclick="goMatchDay(${m.ms})">`+
+      `<span class="lf">${flag(m.hc)}</span><span class="lsc">${hg==null?"":hg}<span class="lx">×</span>${ag==null?"":ag}</span>`+
+      `<span class="lf">${flag(m.ac)}</span><span class="lmin">${liveLabel(sk)}</span></button>`;
+  }).join("");
+  el.innerHTML=`<div class="lshead"><span class="lsdot"></span>${t('sp_live')}</div><div class="lsrow">${chips}</div>`;
+}
+
+// ---- confete quando a seleção favorita vence ----
+let celebrated = new Set(JSON.parse(localStorage.getItem("copa_celebrated")||"[]"));
+let celebSeeded = localStorage.getItem("copa_celebrated")!==null;
+function persistCeleb(){ try{localStorage.setItem("copa_celebrated",JSON.stringify([...celebrated]));}catch(e){} }
+function favWon(m){
+  const sk=scores[m.pk]; if(!sk||!DONE.has(sk.st))return false;
+  const sh=(sk.hc===m.hc), hg=sh?sk.gh:sk.ga, ag=sh?sk.ga:sk.gh;
+  if(hg==null||ag==null)return false;
+  const favHome=(m.hc===fav), fg=favHome?hg:ag, og=favHome?ag:hg;
+  return fg>og;
+}
+function checkCelebrate(){
+  if(!Object.keys(scores).length)return;            // espera ter dados de placar
+  if(!celebSeeded){                                  // 1ª vez: marca jogos já encerrados sem animar
+    M.forEach(m=>{const sk=scores[m.pk]; if(sk&&DONE.has(sk.st))celebrated.add(m.n);});
+    persistCeleb(); celebSeeded=true; return;
+  }
+  let fired=false;
+  M.forEach(m=>{ if(isFav(m)&&favWon(m)&&!celebrated.has(m.n)){ celebrated.add(m.n); fired=true; } });
+  if(fired){ persistCeleb(); celebrate(); }
+}
+function celebrate(){
+  if(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches)return;
+  const cv=document.createElement("canvas");
+  cv.style.cssText="position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:9999";
+  const dpr=Math.min(window.devicePixelRatio||1,2);
+  const W=cv.width=innerWidth*dpr, H=cv.height=innerHeight*dpr;
+  document.body.appendChild(cv);
+  const ctx=cv.getContext("2d");
+  const cols=["#F7C948","#19C9E6","#7C5CFF","#00B86B","#FFD43B","#ffffff","#FF5E7E"];
+  const P=[];
+  for(let i=0;i<130;i++){P.push({x:Math.random()*W,y:-Math.random()*H*0.4,vx:(Math.random()-0.5)*3*dpr,vy:(2+Math.random()*4)*dpr,s:(6+Math.random()*7)*dpr,rot:Math.random()*6.28,vr:(Math.random()-0.5)*0.3,c:cols[i%cols.length]});}
+  let t0=null; const dur=2900;
+  function frame(t){
+    if(t0===null)t0=t;
+    const e=t-t0; ctx.clearRect(0,0,W,H);
+    for(const p of P){ p.x+=p.vx; p.y+=p.vy; p.vy+=0.04*dpr; p.rot+=p.vr;
+      ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.rot); ctx.globalAlpha=Math.max(0,1-e/dur); ctx.fillStyle=p.c;
+      ctx.fillRect(-p.s/2,-p.s/2,p.s,p.s*0.6); ctx.restore(); }
+    if(e<dur)requestAnimationFrame(frame); else cv.remove();
+  }
+  requestAnimationFrame(frame);
+}
 function updateStatuses(){
   const now=Date.now();
   document.querySelectorAll("[data-ko]").forEach(el=>{
@@ -632,6 +705,8 @@ function updateStatuses(){
     b.innerHTML=(cls==="live"?'':'<span class="dot"></span>')+txt;
   });
   if(view==="day")renderBrNext();
+  renderLiveStrip();
+  checkCelebrate();
 }
 
 function setView(v){view=v;render();window.scrollTo({top:0});}

@@ -79,7 +79,7 @@
     border:1px solid var(--line);border-radius:11px;padding:8px 30px 8px 11px;font-family:var(--inter);font-weight:600;font-size:13px;cursor:pointer;
     background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2393A0BE' stroke-width='1.6' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 11px center}
   .seg{display:flex;background:var(--bg-raise);border:1px solid var(--line);border-radius:14px;padding:4px;gap:4px}
-  .seg button{flex:1;border:0;background:transparent;color:var(--muted);font-family:var(--inter);font-weight:600;font-size:13.5px;padding:10px 8px;border-radius:10px;cursor:pointer;transition:.18s}
+  .seg button{flex:1;border:0;background:transparent;color:var(--muted);font-family:var(--inter);font-weight:600;font-size:12.5px;padding:10px 5px;border-radius:10px;cursor:pointer;transition:.18s;white-space:nowrap}
   .seg button.on{color:#fff;background:linear-gradient(120deg,var(--vio),var(--cyan));box-shadow:0 8px 22px -10px rgba(124,92,255,.7)}
 
   .br-btn{margin-top:10px;width:100%;display:flex;align-items:center;justify-content:center;gap:8px;
@@ -225,6 +225,24 @@
   .lchip .lx{color:var(--faint);margin:0 4px;font-weight:600}
   .lchip .lmin{font-size:11px;font-weight:700;color:var(--gold);margin-left:2px}
   @media(prefers-reduced-motion:reduce){.lsdot{animation:none}}
+  .kohint{font-size:12px;color:var(--muted);background:var(--bg-raise);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin:4px 0 6px;line-height:1.5}
+  .khead{display:flex;align-items:baseline;gap:9px;margin:20px 2px 10px;color:var(--ink);font-family:var(--sora);font-weight:800;font-size:13.5px;letter-spacing:.3px}
+  .khead span{color:var(--muted);font-family:var(--inter);font-weight:600;font-size:11.5px;letter-spacing:0}
+  .kgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .kcard{background:var(--bg-card);border:1px solid var(--line);border-radius:14px;padding:11px 12px;min-width:0}
+  .kno{font-size:9.5px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--faint);margin-bottom:6px}
+  .kteam{display:flex;align-items:center;gap:8px;padding:3px 0;min-width:0}
+  .kteam .fl{font-size:18px;width:22px;text-align:center;flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center}
+  .kteam .fl.ph::before{content:"";display:inline-block;width:13px;height:13px;border-radius:50%;background:rgba(255,255,255,.07);border:1px solid var(--line)}
+  .kteam .nm{font-family:var(--sora);font-weight:700;font-size:13.5px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+  .kteam:not(.on) .nm{color:var(--muted);font-weight:600;font-size:12px}
+  .kteam.kfav .nm{color:var(--br-yellow)}
+  .kx{font-size:10px;color:var(--faint);font-weight:700;margin:1px 0 1px 30px}
+  .kteam .ksc{margin-left:auto;flex:0 0 auto;font-family:var(--sora);font-weight:800;font-size:15px;font-variant-numeric:tabular-nums;color:var(--ink);padding-left:8px}
+  .kteam.kfav .ksc{color:var(--br-yellow)}
+  .kstat{margin-top:7px;font-size:10.5px;font-weight:700;color:var(--muted)}
+  .kstat.live{color:#ff8a5c}
+  @media(max-width:430px){.kgrid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -240,6 +258,7 @@
       <button id="tabDay" class="on" onclick="setView('day')">Por dia</button>
       <button id="tabAll" onclick="setView('all')">Seleções</button>
       <button id="tabGroups" onclick="setView('groups')">Grupos</button>
+      <button id="tabKo" onclick="setView('ko')">Mata-mata</button>
     </div>
     <div class="settings">
       <div class="langtog"><button id="langPt" onclick="setLang('pt')">PT</button><button id="langEn" onclick="setLang('en')">EN</button></div>
@@ -276,6 +295,11 @@
   <!-- GROUPS VIEW -->
   <section id="groupsView" style="display:none">
     <div id="groupsList"></div>
+  </section>
+
+  <!-- KNOCKOUT VIEW -->
+  <section id="koView" style="display:none">
+    <div id="koList"></div>
   </section>
 
   <footer>
@@ -398,7 +422,7 @@ const STR={
   st_sched:"Agendado",st_live:"Ao vivo",st_done:"Encerrado",st_postponed:"Adiado",st_cancelled:"Cancelado",st_suspended:"Interrompido",st_abandoned:"Abandonado",
   halftime:"Intervalo",extratime:"Prorrogação",penalties:"Pênaltis",live:"Ao vivo",inprogress:"Em andamento",pen_decided:"decidido nos pênaltis",after_et:"após prorrogação",
   starts_in:"começa em",min:"min",day:"dia",days:"dias",in_:"em",sp_next:"Próximo jogo",sp_live:"Ao vivo agora",sp_last:"Último jogo",see_games:"ver jogos ›",
-  footer:"Horários no fuso do seu aparelho. Os 72 jogos da fase de grupos vão de 11 a 28 de junho de 2026. A FIFA pode ajustar horários — confirme no dia.",go:"Vai"},
+  footer:"Horários no fuso do seu aparelho. Os 72 jogos da fase de grupos vão de 11 a 28 de junho de 2026. A FIFA pode ajustar horários — confirme no dia.",go:"Vai",tab_ko:"Mata-mata",ko_match:"Jogo",ko_1st:"1º",ko_2nd:"2º",ko_3rd:"3º",ko_winner:"Vencedor",ko_loser:"Perdedor",ko_hint:"Os confrontos vão se preenchendo conforme cada grupo termina."},
  en:{tab_day:"By day",tab_all:"Teams",tab_groups:"Groups",all_teams:"All teams",games_one:"game",games_many:"games",
   my_team:"My team",today:"Today",back_today:"Back to today",no_games_day:"No matches on this day",use_arrows:"Use the arrows to browse days.",
   groups_over:"Group stage finished",groups_over_sub:"The 72 group-stage matches ran June 11–28.",next_game:"Next match:",no_games:"No matches",choose_other:"Pick another team.",
@@ -406,7 +430,7 @@ const STR={
   st_sched:"Scheduled",st_live:"Live",st_done:"Finished",st_postponed:"Postponed",st_cancelled:"Cancelled",st_suspended:"Suspended",st_abandoned:"Abandoned",
   halftime:"Half-time",extratime:"Extra time",penalties:"Penalties",live:"Live",inprogress:"In progress",pen_decided:"decided on penalties",after_et:"after extra time",
   starts_in:"starts in",min:"min",day:"day",days:"days",in_:"in",sp_next:"Next match",sp_live:"Live now",sp_last:"Last match",see_games:"see games ›",
-  footer:"Times shown in your device's timezone. The 72 group-stage matches run June 11–28, 2026. FIFA may adjust times — check on the day.",go:"Go"}
+  footer:"Times shown in your device's timezone. The 72 group-stage matches run June 11–28, 2026. FIFA may adjust times — check on the day.",go:"Go",tab_ko:"Knockout",ko_match:"Match",ko_1st:"1st",ko_2nd:"2nd",ko_3rd:"3rd",ko_winner:"Winner",ko_loser:"Loser",ko_hint:"Matchups fill in as each group finishes."}
 };
 let lang = (localStorage.getItem("copa_lang")==="en") ? "en" : "pt";
 let fav = localStorage.getItem("copa_fav") || "BRA";
@@ -525,12 +549,15 @@ function render(){
   document.getElementById("tabDay").classList.toggle("on",view==="day");
   document.getElementById("tabAll").classList.toggle("on",view==="all");
   document.getElementById("tabGroups").classList.toggle("on",view==="groups");
+  document.getElementById("tabKo").classList.toggle("on",view==="ko");
   document.getElementById("dayView").style.display=view==="day"?"block":"none";
   document.getElementById("allView").style.display=view==="all"?"block":"none";
   document.getElementById("groupsView").style.display=view==="groups"?"block":"none";
+  document.getElementById("koView").style.display=view==="ko"?"block":"none";
   if(view==="day"){renderDay();renderBrNext();}
   else if(view==="all")renderAll();
-  else renderGroups();
+  else if(view==="groups")renderGroups();
+  else renderKnockout();
   updateStatuses();
 }
 
@@ -572,6 +599,79 @@ function renderGroups(){
   const data=computeStandings();
   document.getElementById("groupsList").innerHTML=data.map(groupCard).join("")+
     `<div class="qnote"><i><span class="qdot" style="background:#19E08A"></span>${t('adv12')}</i><i><span class="qdot" style="background:#F7C948"></span>${t('adv3')}</i></div>`;
+}
+
+/* ---- mata-mata / knockout (estrutura oficial FIFA: jogos 73-104) ---- */
+const KO=[
+ [73,"R32","2A","2B"],[74,"R32","1E","3:A/B/C/D/F"],[75,"R32","1F","2C"],[76,"R32","1C","2F"],
+ [77,"R32","1I","3:C/D/F/G/H"],[78,"R32","2E","2I"],[79,"R32","1A","3:C/E/F/H/I"],[80,"R32","1L","3:E/H/I/J/K"],
+ [81,"R32","1D","3:B/E/F/I/J"],[82,"R32","1G","3:A/E/H/I/J"],[83,"R32","2K","2L"],[84,"R32","1H","2J"],
+ [85,"R32","1B","3:E/F/G/I/J"],[86,"R32","1J","2H"],[87,"R32","1K","3:D/E/I/J/L"],[88,"R32","2D","2G"],
+ [89,"R16","W74","W77"],[90,"R16","W73","W75"],[91,"R16","W76","W78"],[92,"R16","W79","W80"],
+ [93,"R16","W83","W84"],[94,"R16","W81","W82"],[95,"R16","W86","W88"],[96,"R16","W85","W87"],
+ [97,"QF","W89","W90"],[98,"QF","W93","W94"],[99,"QF","W91","W92"],[100,"QF","W95","W96"],
+ [101,"SF","W97","W98"],[102,"SF","W99","W100"],
+ [103,"TP","L101","L102"],[104,"F","W101","W102"]
+];
+const KO_ORDER=["R32","R16","QF","SF","TP","F"];
+const KOR={R32:{pt:"16-avos de final",en:"Round of 32"},R16:{pt:"Oitavas de final",en:"Round of 16"},QF:{pt:"Quartas de final",en:"Quarterfinals"},SF:{pt:"Semifinais",en:"Semifinals"},TP:{pt:"Disputa de 3º lugar",en:"Third place"},F:{pt:"Final",en:"Final"}};
+const KOD={R32:{pt:"28 jun – 3 jul",en:"Jun 28 – Jul 3"},R16:{pt:"4 – 7 jul",en:"Jul 4 – 7"},QF:{pt:"9 – 11 jul",en:"Jul 9 – 11"},SF:{pt:"14 e 15 jul",en:"Jul 14 – 15"},TP:{pt:"18 jul",en:"Jul 18"},F:{pt:"19 jul",en:"Jul 19"}};
+function groupComplete(g){ const gm=M.filter(x=>x.g===g); return gm.length>0 && gm.every(x=>{const s=scores[x.pk];return s&&DONE.has(s.st);}); }
+function renderKnockout(){
+  const data=computeStandings(), SB={};
+  data.forEach(d=>{ SB[d.group.replace("GROUP_","")]=d.table; });
+  const ref=n=>(lang==="en"?"M":"J")+n;
+  const memoW={}, memoL={};
+  const findK=n=>KO.find(k=>k[0]===n);
+  function codeOf(s){
+    let m;
+    if(m=s.match(/^([12])([A-L])$/)){ const pos=+m[1]-1,g=m[2]; return (groupComplete(g)&&SB[g]&&SB[g][pos])?SB[g][pos].code:null; }
+    if(s[0]==="3") return null;
+    if(m=s.match(/^W(\d+)$/)) return winOf(+m[1]);
+    if(m=s.match(/^L(\d+)$/)) return loseOf(+m[1]);
+    return null;
+  }
+  function resK(n){ const k=findK(n); if(!k)return null; const h=codeOf(k[2]),a=codeOf(k[3]); if(!h||!a)return null; const sk=scores[[h,a].sort().join("-")]; if(!sk||!DONE.has(sk.st))return null; const sh=sk.hc===h; const gh=sh?sk.gh:sk.ga,ga=sh?sk.ga:sk.gh; if(gh==null||ga==null||gh===ga)return null; return {h,a,gh,ga}; }
+  function winOf(n){ if(n in memoW)return memoW[n]; memoW[n]=null; const r=resK(n); memoW[n]=r?(r.gh>r.ga?r.h:r.a):null; return memoW[n]; }
+  function loseOf(n){ if(n in memoL)return memoL[n]; memoL[n]=null; const r=resK(n); memoL[n]=r?(r.gh>r.ga?r.a:r.h):null; return memoL[n]; }
+  function slot(s){
+    let m;
+    if(m=s.match(/^([12])([A-L])$/)){
+      const pos=+m[1]-1,g=m[2];
+      if(groupComplete(g)&&SB[g]&&SB[g][pos]){ const c=SB[g][pos].code; return {fl:flag(c),nm:teamName(c),team:true,code:c}; }
+      return {fl:"",nm:(m[1]==="1"?t('ko_1st'):t('ko_2nd'))+" "+g,team:false};
+    }
+    if(m=s.match(/^3:(.+)$/)) return {fl:"",nm:t('ko_3rd')+" "+m[1],team:false};
+    if(m=s.match(/^W(\d+)$/)){ const c=winOf(+m[1]); return c?{fl:flag(c),nm:teamName(c),team:true,code:c}:{fl:"",nm:t('ko_winner')+" "+ref(m[1]),team:false}; }
+    if(m=s.match(/^L(\d+)$/)){ const c=loseOf(+m[1]); return c?{fl:flag(c),nm:teamName(c),team:true,code:c}:{fl:"",nm:t('ko_loser')+" "+ref(m[1]),team:false}; }
+    return {fl:"",nm:s,team:false};
+  }
+  function row(s,score){
+    const fl = s.fl ? ('<span class="fl">'+s.fl+'</span>') : '<span class="fl ph"></span>';
+    const cls = "kteam"+(s.team?" on":"")+(s.team&&s.code===fav?" kfav":"");
+    const sc = (score!=null&&score!=="") ? ('<span class="ksc">'+score+'</span>') : '';
+    return '<div class="'+cls+'">'+fl+'<span class="nm">'+s.nm+'</span>'+sc+'</div>';
+  }
+  function koc(k){
+    const H=slot(k[2]), A=slot(k[3]);
+    let gh="",ga="",badge="",live=false;
+    if(H.team&&A.team){
+      const sk=scores[[H.code,A.code].sort().join("-")];
+      if(sk){
+        const sh=sk.hc===H.code; const x=sh?sk.gh:sk.ga, y=sh?sk.ga:sk.gh;
+        if(LIVE.has(sk.st)){ live=true; gh=(x==null?"":x); ga=(y==null?"":y); badge=liveLabel(sk); }
+        else if(DONE.has(sk.st)){ gh=(x==null?"":x); ga=(y==null?"":y); badge=t('st_done')+(sk.st==="PEN"?(" · "+t('penalties')):sk.st==="AET"?(" · "+t('extratime')):""); }
+      }
+    }
+    const st = badge?('<div class="kstat'+(live?' live':'')+'">'+(live?'● ':'')+badge+'</div>'):'';
+    return '<div class="kcard"><div class="kno">'+t('ko_match')+' '+k[0]+'</div>'+row(H,gh)+'<div class="kx">×</div>'+row(A,ga)+st+'</div>';
+  }
+  let html='<div class="kohint">'+t('ko_hint')+'</div>';
+  KO_ORDER.forEach(rd=>{
+    html+='<div class="khead">'+KOR[rd][lang]+' · <span>'+KOD[rd][lang]+'</span></div>';
+    html+='<div class="kgrid">'+KO.filter(k=>k[1]===rd).map(koc).join("")+'</div>';
+  });
+  document.getElementById("koList").innerHTML=html;
 }
 
 function renderDay(){
@@ -732,6 +832,7 @@ function applyStaticText(){
   document.getElementById("tabDay").textContent=t('tab_day');
   document.getElementById("tabAll").textContent=t('tab_all');
   document.getElementById("tabGroups").textContent=t('tab_groups');
+  document.getElementById("tabKo").textContent=t('tab_ko');
   document.getElementById("favLabel").textContent=t('my_team');
   document.getElementById("footerNote").textContent=t('footer');
   document.getElementById("lgSched").textContent=t('st_sched');
@@ -760,7 +861,7 @@ async function fetchScores(){
     const d=await r.json();
     const map={};
     (d.matches||[]).forEach(m=>{ map[pairKey(m.h,m.a)]={st:m.st,el:m.el,hc:code(m.h),gh:m.gh,ga:m.ga}; });
-    scores=map; updateStatuses(); if(view==="groups")renderGroups();
+    scores=map; updateStatuses(); if(view==="groups")renderGroups(); if(view==="ko")renderKnockout();
   }catch(e){}
 }
 function anyLiveOrSoon(){

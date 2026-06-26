@@ -243,6 +243,34 @@
   .kstat{margin-top:7px;font-size:10.5px;font-weight:700;color:var(--muted)}
   .kstat.live{color:#ff8a5c}
   @media(max-width:430px){.kgrid{grid-template-columns:1fr}}
+  /* mata-mata: chave horizontal conectada (estilo Apple) */
+  .koseg{display:flex;background:var(--bg-raise);border:1px solid var(--line);border-radius:14px;padding:4px;gap:4px;margin:4px 0 10px}
+  .koseg button{flex:1;border:0;background:transparent;color:var(--muted);font-family:var(--sora);font-weight:800;font-size:12.5px;padding:9px 4px;border-radius:10px;cursor:pointer;transition:.18s;letter-spacing:.3px}
+  .koseg button.on{color:#fff;background:linear-gradient(120deg,var(--vio),var(--cyan));box-shadow:0 8px 22px -10px rgba(124,92,255,.7)}
+  .kowrap{overflow-x:auto;overflow-y:visible;-webkit-overflow-scrolling:touch;padding-bottom:10px}
+  .kobracket{position:relative;display:flex;align-items:stretch;gap:36px;width:max-content;padding:2px}
+  .kobsvg{position:absolute;top:0;left:0;pointer-events:none;z-index:0;overflow:visible}
+  .kocol{position:relative;z-index:1;display:flex;flex-direction:column;flex:0 0 auto;width:158px}
+  .kocolh{height:40px;display:flex;flex-direction:column;justify-content:center;text-align:center;font-family:var(--sora);font-weight:800;font-size:12px;color:var(--ink);line-height:1.15}
+  .kocolh span{color:var(--muted);font-family:var(--inter);font-weight:600;font-size:9.5px;margin-top:2px}
+  .kocards{flex:1;display:flex;flex-direction:column;justify-content:space-around;gap:12px}
+  .kc{background:var(--bg-card);border:1px solid var(--line);border-radius:12px;padding:8px 9px}
+  .kc.hasfav{border-color:rgba(255,212,59,.55);box-shadow:0 0 0 1px rgba(255,212,59,.22)}
+  .kcrow{display:flex;align-items:center;gap:7px;padding:2px 0;min-width:0}
+  .kcrow .fl{font-size:15px;width:18px;text-align:center;flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center}
+  .kcrow .fl.ph::before{content:"";display:inline-block;width:11px;height:11px;border-radius:50%;background:rgba(255,255,255,.07);border:1px solid var(--line)}
+  .kcrow .nm{font-family:var(--sora);font-weight:700;font-size:12px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+  .kcrow:not(.on) .nm{color:var(--muted);font-weight:600;font-size:11px}
+  .kcrow.kfav .nm{color:var(--br-yellow)}
+  .kcrow .ksc{margin-left:auto;flex:0 0 auto;font-family:var(--sora);font-weight:800;font-size:13px;font-variant-numeric:tabular-nums;color:var(--ink);padding-left:6px}
+  .kcrow.kfav .ksc{color:var(--br-yellow)}
+  .kcx{height:1px;background:var(--line);margin:3px 0}
+  .kcst{margin-top:5px;font-size:9px;font-weight:700;color:var(--muted);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .kcst.live{color:#ff8a5c}
+  .kothird{margin-top:16px;border-top:1px solid var(--line);padding-top:14px}
+  .kothird .kothh{font-family:var(--sora);font-weight:800;font-size:12.5px;color:var(--ink);margin-bottom:9px;text-align:center}
+  .kothird .kothh span{color:var(--muted);font-family:var(--inter);font-weight:600;font-size:11px}
+  .kothird .kc{max-width:260px;margin:0 auto}
 </style>
 </head>
 <body>
@@ -299,7 +327,16 @@
 
   <!-- KNOCKOUT VIEW -->
   <section id="koView" style="display:none">
-    <div id="koList"></div>
+    <div class="koseg" id="koSeg">
+      <button data-r="R32" onclick="koGo('R32')">R32</button>
+      <button data-r="R16" onclick="koGo('R16')">R16</button>
+      <button data-r="QF" onclick="koGo('QF')">QF</button>
+      <button data-r="SF" onclick="koGo('SF')">SF</button>
+      <button data-r="F" onclick="koGo('F')">Final</button>
+    </div>
+    <div class="kohint" id="koHint"></div>
+    <div class="kowrap" id="koWrap"><div class="kobracket" id="koBracket"></div></div>
+    <div id="koThird"></div>
   </section>
 
   <footer>
@@ -486,6 +523,7 @@ const ROSTER={};
 M.forEach(m=>{ (ROSTER[m.g]=ROSTER[m.g]||new Set()).add(m.hc); ROSTER[m.g].add(code(m.a)); });
 
 let view="day";
+let koWin={};
 let sel=startOfDay(new Date());
 
 function startOfDay(d){return new Date(d.getFullYear(),d.getMonth(),d.getDate());}
@@ -659,19 +697,65 @@ function renderKnockout(){
       const sk=scores[[H.code,A.code].sort().join("-")];
       if(sk){
         const sh=sk.hc===H.code; const x=sh?sk.gh:sk.ga, y=sh?sk.ga:sk.gh;
-        if(LIVE.has(sk.st)){ live=true; gh=(x==null?"":x); ga=(y==null?"":y); badge=liveLabel(sk); }
+        if(LIVE.has(sk.st)){ live=true; gh=(x==null?"":x); ga=(y==null?"":y); badge="● "+liveLabel(sk); }
         else if(DONE.has(sk.st)){ gh=(x==null?"":x); ga=(y==null?"":y); badge=t('st_done')+(sk.st==="PEN"?(" · "+t('penalties')):sk.st==="AET"?(" · "+t('extratime')):""); }
       }
     }
-    const st = badge?('<div class="kstat'+(live?' live':'')+'">'+(live?'● ':'')+badge+'</div>'):'';
-    return '<div class="kcard"><div class="kno">'+t('ko_match')+' '+k[0]+'</div>'+row(H,gh)+'<div class="kx">×</div>'+row(A,ga)+st+'</div>';
+    const hasFav=(H.team&&H.code===fav)||(A.team&&A.code===fav);
+    const krow=(s,score)=>{
+      const fl=s.fl?('<span class="fl">'+s.fl+'</span>'):'<span class="fl ph"></span>';
+      const cls="kcrow"+(s.team?" on":"")+(s.team&&s.code===fav?" kfav":"");
+      const sc=(score!==""&&score!=null)?('<span class="ksc">'+score+'</span>'):'';
+      return '<div class="'+cls+'">'+fl+'<span class="nm">'+s.nm+'</span>'+sc+'</div>';
+    };
+    const stt=badge?('<div class="kcst'+(live?' live':'')+'">'+badge+'</div>'):'';
+    return '<div class="kc'+(hasFav?' hasfav':'')+'" data-n="'+k[0]+'">'+krow(H,gh)+'<div class="kcx"></div>'+krow(A,ga)+stt+'</div>';
   }
-  let html='<div class="kohint">'+t('ko_hint')+'</div>';
-  KO_ORDER.forEach(rd=>{
-    html+='<div class="khead">'+KOR[rd][lang]+' · <span>'+KOD[rd][lang]+'</span></div>';
-    html+='<div class="kgrid">'+KO.filter(k=>k[1]===rd).map(koc).join("")+'</div>';
+  koWin={}; KO.forEach(k=>{ koWin[k[0]]=winOf(k[0]); });
+  const COLS=["R32","R16","QF","SF","F"];
+  let html="";
+  COLS.forEach(rd=>{
+    html+='<div class="kocol" data-r="'+rd+'"><div class="kocolh">'+KOR[rd][lang]+'<span>'+KOD[rd][lang]+'</span></div><div class="kocards">'+KO.filter(k=>k[1]===rd).map(koc).join("")+'</div></div>';
   });
-  document.getElementById("koList").innerHTML=html;
+  document.getElementById("koBracket").innerHTML=html;
+  const tp=KO.find(k=>k[1]==="TP");
+  document.getElementById("koThird").innerHTML='<div class="kothird"><div class="kothh">'+KOR.TP[lang]+' · <span>'+KOD.TP[lang]+'</span></div>'+koc(tp)+'</div>';
+  document.getElementById("koHint").textContent=t('ko_hint');
+  requestAnimationFrame(()=>{ drawKoConnectors(); koActiveByScroll(); });
+}
+function drawKoConnectors(){
+  const br=document.getElementById("koBracket"); if(!br||!br.querySelector(".kc"))return;
+  let svg=br.querySelector("svg.kobsvg");
+  if(!svg){ svg=document.createElementNS("http://www.w3.org/2000/svg","svg"); svg.setAttribute("class","kobsvg"); br.insertBefore(svg,br.firstChild); }
+  const W=br.scrollWidth, Hh=br.scrollHeight, brRect=br.getBoundingClientRect();
+  svg.setAttribute("width",W); svg.setAttribute("height",Hh); svg.innerHTML="";
+  const el={}; br.querySelectorAll(".kc[data-n]").forEach(c=>{ el[c.dataset.n]=c; });
+  const ctr=(c,side)=>{ const r=c.getBoundingClientRect(); return { x:(r.left-brRect.left)+(side==="r"?r.width:0), y:(r.top-brRect.top)+r.height/2 }; };
+  KO.forEach(k=>{
+    if(!["R16","QF","SF","F"].includes(k[1]))return;
+    const tgt=el[k[0]]; if(!tgt)return;
+    [k[2],k[3]].forEach(s=>{
+      const mm=s.match(/^W(\d+)$/); if(!mm)return; const f=el[mm[1]]; if(!f)return;
+      const a=ctr(f,"r"), b=ctr(tgt,"l"), midX=(a.x+b.x)/2;
+      const onPath=(koWin[+mm[1]]&&koWin[+mm[1]]===fav);
+      const p=document.createElementNS("http://www.w3.org/2000/svg","path");
+      p.setAttribute("d","M"+a.x+" "+a.y+" H"+midX+" V"+b.y+" H"+b.x);
+      p.setAttribute("fill","none");
+      p.setAttribute("stroke",onPath?"var(--br-yellow)":"rgba(255,255,255,.15)");
+      p.setAttribute("stroke-width",onPath?"2.4":"1.6");
+      svg.appendChild(p);
+    });
+  });
+}
+function setKoActive(r){ document.querySelectorAll("#koSeg button").forEach(b=>b.classList.toggle("on",b.dataset.r===r)); }
+function koGo(r){ const c=document.querySelector('.kocol[data-r="'+r+'"]'), wrap=document.getElementById("koWrap"); if(c&&wrap)wrap.scrollTo({left:Math.max(0,c.offsetLeft-12),behavior:"smooth"}); setKoActive(r); }
+function koActiveByScroll(){
+  const wrap=document.getElementById("koWrap"), br=document.getElementById("koBracket"); if(!wrap||!br)return;
+  const cols=[...br.querySelectorAll(".kocol")]; if(!cols.length)return;
+  if(wrap.scrollLeft>=(wrap.scrollWidth-wrap.clientWidth)-6){ setKoActive(cols[cols.length-1].dataset.r); return; }
+  const ref=wrap.scrollLeft+24; let best=null,bd=1e9;
+  cols.forEach(c=>{ const d=Math.abs(c.offsetLeft-ref); if(d<bd){bd=d;best=c.dataset.r;} });
+  if(best)setKoActive(best);
 }
 
 function renderDay(){
@@ -861,6 +945,10 @@ async function fetchScores(){
     const d=await r.json();
     const map={};
     (d.matches||[]).forEach(m=>{ map[pairKey(m.h,m.a)]={st:m.st,el:m.el,hc:code(m.h),gh:m.gh,ga:m.ga}; });
+    // trava de sanidade: nenhum jogo pode ficar "ao vivo" para sempre. Se o feed reporta status
+    // ao vivo mas o início foi há muito tempo, o dado está velho/travado — tratamos como encerrado.
+    const now=Date.now(), MAX_LIVE=3.5*3600000;
+    M.forEach(m=>{ const sk=map[m.pk]; if(sk && LIVE.has(sk.st) && (now-m.ms)>MAX_LIVE){ sk.st="FINISHED"; sk.el=null; } });
     scores=map; updateStatuses(); if(view==="groups")renderGroups(); if(view==="ko")renderKnockout();
   }catch(e){}
 }
@@ -870,6 +958,8 @@ function anyLiveOrSoon(){
 }
 document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible")fetchScores(); });
 setInterval(()=>{ if(document.visibilityState==="visible"&&anyLiveOrSoon())fetchScores(); },90000);
+(function(){ const w=document.getElementById("koWrap"); if(w){ let st; w.addEventListener("scroll",()=>{ clearTimeout(st); st=setTimeout(koActiveByScroll,90); },{passive:true}); } })();
+window.addEventListener("resize",()=>{ if(view==="ko")drawKoConnectors(); });
 fetchScores();
 
 // auto-atualização: o app pega a versão nova sozinho ao abrir (online) e funciona offline

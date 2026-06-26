@@ -651,6 +651,14 @@ const KO=[
  [101,"SF","W97","W98"],[102,"SF","W99","W100"],
  [103,"TP","L101","L102"],[104,"F","W101","W102"]
 ];
+// ordem de exibição da chave (pares que se enfrentam na fase seguinte ficam adjacentes; evita linhas cruzadas)
+const KO_DISPLAY={
+  R32:[74,77,73,75,83,84,81,82,76,78,79,80,86,88,85,87],
+  R16:[89,90,93,94,91,92,95,96],
+  QF:[97,98,99,100],
+  SF:[101,102],
+  F:[104]
+};
 const KO_ORDER=["R32","R16","QF","SF","TP","F"];
 const KOR={R32:{pt:"16-avos de final",en:"Round of 32"},R16:{pt:"Oitavas de final",en:"Round of 16"},QF:{pt:"Quartas de final",en:"Quarterfinals"},SF:{pt:"Semifinais",en:"Semifinals"},TP:{pt:"Disputa de 3º lugar",en:"Third place"},F:{pt:"Final",en:"Final"}};
 const KOD={R32:{pt:"28 jun – 3 jul",en:"Jun 28 – Jul 3"},R16:{pt:"4 – 7 jul",en:"Jul 4 – 7"},QF:{pt:"9 – 11 jul",en:"Jul 9 – 11"},SF:{pt:"14 e 15 jul",en:"Jul 14 – 15"},TP:{pt:"18 jul",en:"Jul 18"},F:{pt:"19 jul",en:"Jul 19"}};
@@ -715,7 +723,7 @@ function renderKnockout(){
   const COLS=["R32","R16","QF","SF","F"];
   let html="";
   COLS.forEach(rd=>{
-    html+='<div class="kocol" data-r="'+rd+'"><div class="kocolh">'+KOR[rd][lang]+'<span>'+KOD[rd][lang]+'</span></div><div class="kocards">'+KO.filter(k=>k[1]===rd).map(koc).join("")+'</div></div>';
+    html+='<div class="kocol" data-r="'+rd+'"><div class="kocolh">'+KOR[rd][lang]+'<span>'+KOD[rd][lang]+'</span></div><div class="kocards">'+KO_DISPLAY[rd].map(n=>KO.find(k=>k[0]===n)).map(koc).join("")+'</div></div>';
   });
   document.getElementById("koBracket").innerHTML=html;
   const tp=KO.find(k=>k[1]==="TP");

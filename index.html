@@ -524,6 +524,23 @@ M.forEach(m=>{ (ROSTER[m.g]=ROSTER[m.g]||new Set()).add(m.hc); ROSTER[m.g].add(c
 
 let view="day";
 let koWin={};
+let koFeed=[];   // jogos do mata-mata vindos do feed oficial (preenchidos após a fase de grupos)
+function stageLabel(st){
+  st=(st||"").toUpperCase();
+  if(st.includes("32"))return lang==="en"?"Round of 32":"16-avos";
+  if(st.includes("16"))return lang==="en"?"Round of 16":"Oitavas";
+  if(st.includes("QUARTER"))return lang==="en"?"Quarterfinals":"Quartas";
+  if(st.includes("SEMI"))return lang==="en"?"Semifinals":"Semifinal";
+  if(st.includes("THIRD")||st.includes("3RD"))return lang==="en"?"Third place":"3º lugar";
+  if(st.includes("FINAL"))return "Final";
+  return lang==="en"?"Knockout":"Mata-mata";
+}
+function r32Opponent(code){
+  if(!code||!koFeed.length)return null;
+  const ms=koFeed.filter(k=>k.hc===code||k.ac===code).sort((a,b)=>(a.ms||0)-(b.ms||0));
+  if(!ms.length)return null;
+  const k=ms[0]; return k.hc===code?k.ac:k.hc;
+}
 let sel=startOfDay(new Date());
 
 function startOfDay(d){return new Date(d.getFullYear(),d.getMonth(),d.getDate());}
@@ -536,9 +553,14 @@ function longDate(d){return cap(d.toLocaleDateString(loc(),{weekday:"long"}))+" 
 function relTxt(ms){const m=Math.round(ms/60000);if(m<60)return t('starts_in')+" "+m+" "+t('min');const h=Math.floor(m/60),mm=m%60;if(h<24)return t('starts_in')+" "+h+"h"+(mm?(" "+mm+t('min')):"");const dd=Math.floor(h/24);return t('in_')+" "+dd+" "+(dd>1?t('days'):t('day'));}
 
 function card(m){
+  const ko=!m.g;
+  const chips = ko
+    ? `<span class="chip g">${m.stageLbl||t('tab_ko')}</span>`
+    : `<span class="chip g">${t('group')} ${m.g}</span><span class="chip">${roundLabel(m.r)}</span>`;
+  const meta = ko ? "" : `<div class="meta">📍 ${cityName(m.city)} · ${ctryName(m.ctry)}</div>`;
   return `<div class="card${isFav(m)?' br':''}" data-ko="${m.ms}" data-pk="${m.pk}" data-hc="${m.hc}">
     <div class="crow1">
-      <div class="chips"><span class="chip g">${t('group')} ${m.g}</span><span class="chip">${roundLabel(m.r)}</span></div>
+      <div class="chips">${chips}</div>
       <span class="badge js-status"><span class="dot"></span></span>
     </div>
     <div class="crow2">
@@ -548,14 +570,16 @@ function card(m){
         <div class="team"><span class="fl">${flag(m.ac)}</span><span class="nm">${teamName(m.ac)}</span><span class="sc js-sa"></span></div>
       </div>
     </div>
-    <div class="meta">📍 ${cityName(m.city)} · ${ctryName(m.ctry)}</div>
+    ${meta}
     <div class="cd js-count"></div>
   </div>`;
 }
+function koDayObj(k){ return {ms:k.ms, d:new Date(k.ms), hc:k.hc, ac:k.ac, pk:[k.hc,k.ac].sort().join("-"), g:null, r:null, stageLbl:stageLabel(k.stage)}; }
 
 function favSpotlight(){
   const now=Date.now();
-  const list=M.filter(isFav).sort((a,b)=>a.ms-b.ms);
+  const koObjs=koFeed.filter(k=>k.hc===fav||k.ac===fav).map(koDayObj);
+  const list=M.filter(isFav).concat(koObjs).sort((a,b)=>a.ms-b.ms);
   if(!list.length)return null;
   const live=list.find(m=>{const s=scores[m.pk];return s&&LIVE.has(s.st);});
   if(live)return live;
@@ -570,11 +594,12 @@ function renderBrNext(){
   const sk=scores[m.pk], now=Date.now();
   let label=t('sp_next'), info="", live=false;
   let gh=null,ga=null;
+  const place=m.city?cityName(m.city):(m.stageLbl||""), suf=place?(" · "+place):"";
   if(sk){const sh=(sk.hc===m.hc);gh=sh?sk.gh:sk.ga;ga=sh?sk.ga:sk.gh;}
-  if(sk&&LIVE.has(sk.st)){live=true;label=t('sp_live');info=liveLabel(sk)+" · "+cityName(m.city);}
-  else if(sk&&DONE.has(sk.st)){label=t('sp_last');info=t('st_done')+" · "+cityName(m.city);}
-  else if(m.ms>now){const diff=m.ms-now;info=(diff<24*3600000?relTxt(diff):longDate(m.d)+" · "+fmtTime(m.d))+" · "+cityName(m.city);}
-  else{live=true;label=t('sp_live');info=t('inprogress')+" · "+cityName(m.city);}
+  if(sk&&LIVE.has(sk.st)){live=true;label=t('sp_live');info=liveLabel(sk)+suf;}
+  else if(sk&&DONE.has(sk.st)){label=t('sp_last');info=t('st_done')+suf;}
+  else if(m.ms>now){const diff=m.ms-now;info=(diff<24*3600000?relTxt(diff):longDate(m.d)+" · "+fmtTime(m.d))+suf;}
+  else{live=true;label=t('sp_live');info=t('inprogress')+suf;}
   const mid=(gh!=null&&ga!=null)
     ? `<span class="bn-team"><span class="fl">${flag(m.hc)}</span>${teamName(m.hc)}</span><span class="bn-sc">${gh}<span class="x">×</span>${ga}</span><span class="bn-team r">${teamName(m.ac)}<span class="fl">${flag(m.ac)}</span></span>`
     : `<span class="bn-team"><span class="fl">${flag(m.hc)}</span>${teamName(m.hc)}</span><span class="bn-x">×</span><span class="bn-team r">${teamName(m.ac)}<span class="fl">${flag(m.ac)}</span></span>`;
@@ -677,9 +702,9 @@ function renderKnockout(){
     if(m=s.match(/^L(\d+)$/)) return loseOf(+m[1]);
     return null;
   }
-  function resK(n){ const k=findK(n); if(!k)return null; const h=codeOf(k[2]),a=codeOf(k[3]); if(!h||!a)return null; const sk=scores[[h,a].sort().join("-")]; if(!sk||!DONE.has(sk.st))return null; const sh=sk.hc===h; const gh=sh?sk.gh:sk.ga,ga=sh?sk.ga:sk.gh; if(gh==null||ga==null||gh===ga)return null; return {h,a,gh,ga}; }
-  function winOf(n){ if(n in memoW)return memoW[n]; memoW[n]=null; const r=resK(n); memoW[n]=r?(r.gh>r.ga?r.h:r.a):null; return memoW[n]; }
-  function loseOf(n){ if(n in memoL)return memoL[n]; memoL[n]=null; const r=resK(n); memoL[n]=r?(r.gh>r.ga?r.a:r.h):null; return memoL[n]; }
+  function resK(n){ const k=findK(n); if(!k)return null; const h=codeOf(k[2]),a=codeOf(k[3]); if(!h||!a)return null; const sk=scores[[h,a].sort().join("-")]; if(!sk||!DONE.has(sk.st))return null; const sh=sk.hc===h; const gh=sh?sk.gh:sk.ga,ga=sh?sk.ga:sk.gh; let win=null; if(sk.wn==="HOME_TEAM")win=sk.hc; else if(sk.wn==="AWAY_TEAM")win=(sk.hc===h?a:h); else if(gh!=null&&ga!=null&&gh!==ga)win=(gh>ga?h:a); if(!win)return null; return {h,a,gh,ga,win}; }
+  function winOf(n){ if(n in memoW)return memoW[n]; memoW[n]=null; const r=resK(n); memoW[n]=r?r.win:null; return memoW[n]; }
+  function loseOf(n){ if(n in memoL)return memoL[n]; memoL[n]=null; const r=resK(n); memoL[n]=r?(r.win===r.h?r.a:r.h):null; return memoL[n]; }
   function slot(s){
     let m;
     if(m=s.match(/^([12])([A-L])$/)){
@@ -699,7 +724,10 @@ function renderKnockout(){
     return '<div class="'+cls+'">'+fl+'<span class="nm">'+s.nm+'</span>'+sc+'</div>';
   }
   function koc(k){
-    const H=slot(k[2]), A=slot(k[3]);
+    let H=slot(k[2]), A=slot(k[3]);
+    // preenche o "3º (pool)" com o time real assim que o feed publica o confronto (lado conhecido = vencedor de grupo)
+    if(H.team && !A.team && k[3][0]==="3"){ const o=r32Opponent(H.code); if(o)A={fl:flag(o),nm:teamName(o),team:true,code:o}; }
+    else if(A.team && !H.team && k[2][0]==="3"){ const o=r32Opponent(A.code); if(o)H={fl:flag(o),nm:teamName(o),team:true,code:o}; }
     let gh="",ga="",badge="",live=false;
     if(H.team&&A.team){
       const sk=scores[[H.code,A.code].sort().join("-")];
@@ -773,11 +801,13 @@ function renderDay(){
   if(sameDay(sel,today)) pill.innerHTML=`<span class="today-pill">${t('today')}</span>`;
   else pill.innerHTML=`<span class="reset" onclick="goToday()">${t('back_today')}</span>`;
 
-  const games=M.filter(m=>sameDay(m.d,sel));
+  const koGames=koFeed.filter(k=>k.ms&&sameDay(new Date(k.ms),sel)).map(koDayObj);
+  const games=M.filter(m=>sameDay(m.d,sel)).concat(koGames).sort((a,b)=>a.ms-b.ms);
   const list=document.getElementById("dayList");
   if(!games.length){
-    const next=M.find(m=>m.ms>=sel.getTime());
-    const after=ymd(sel)>"2026-06-28";
+    const pool=M.concat(koFeed.map(koDayObj)).sort((a,b)=>a.ms-b.ms);
+    const next=pool.find(m=>m.ms>=sel.getTime());
+    const after=ymd(sel)>"2026-06-28" && !koFeed.length;
     list.innerHTML=`<div class="empty"><div class="big">${after?t('groups_over'):t('no_games_day')}</div>
       ${after?t('groups_over_sub'):t('use_arrows')}
       ${next?`<div class="nx">${t('next_game')} <b>${longDate(startOfDay(next.d))}</b>, ${fmtTime(next.d)} — ${teamName(next.hc)} × ${teamName(next.ac)}</div>`:""}</div>`;
@@ -808,7 +838,8 @@ function liveLabel(sk){
 function goMatchDay(ms){ sel=startOfDay(new Date(ms)); view="day"; render(); window.scrollTo({top:0}); }
 function renderLiveStrip(){
   const el=document.getElementById("liveStrip"); if(!el)return;
-  const lives=M.filter(m=>{const s=scores[m.pk];return s&&LIVE.has(s.st);}).sort((a,b)=>a.ms-b.ms);
+  const liveK=koFeed.filter(k=>{const s=scores[[k.hc,k.ac].sort().join("-")];return s&&LIVE.has(s.st);}).map(koDayObj);
+  const lives=M.filter(m=>{const s=scores[m.pk];return s&&LIVE.has(s.st);}).concat(liveK).sort((a,b)=>a.ms-b.ms);
   if(!lives.length){el.style.display="none";el.innerHTML="";return;}
   el.style.display="block";
   const chips=lives.map(m=>{
@@ -831,14 +862,23 @@ function favWon(m){
   const favHome=(m.hc===fav), fg=favHome?hg:ag, og=favHome?ag:hg;
   return fg>og;
 }
+function koWon(k){
+  const sk=scores[[k.hc,k.ac].sort().join("-")]; if(!sk||!DONE.has(sk.st))return false;
+  let win=null;
+  if(sk.wn==="HOME_TEAM")win=sk.hc; else if(sk.wn==="AWAY_TEAM")win=(sk.hc===k.hc?k.ac:k.hc);
+  else{const sh=sk.hc===k.hc,hg=sh?sk.gh:sk.ga,ag=sh?sk.ga:sk.gh; if(hg!=null&&ag!=null&&hg!==ag)win=hg>ag?k.hc:k.ac;}
+  return win===fav;
+}
 function checkCelebrate(){
   if(!Object.keys(scores).length)return;            // espera ter dados de placar
   if(!celebSeeded){                                  // 1ª vez: marca jogos já encerrados sem animar
     M.forEach(m=>{const sk=scores[m.pk]; if(sk&&DONE.has(sk.st))celebrated.add(m.n);});
+    koFeed.forEach(k=>{const sk=scores[[k.hc,k.ac].sort().join("-")]; if(sk&&DONE.has(sk.st))celebrated.add(k.hc+"-"+k.ac);});
     persistCeleb(); celebSeeded=true; return;
   }
   let fired=false;
   M.forEach(m=>{ if(isFav(m)&&favWon(m)&&!celebrated.has(m.n)){ celebrated.add(m.n); fired=true; } });
+  koFeed.forEach(k=>{ const key=k.hc+"-"+k.ac; if((k.hc===fav||k.ac===fav)&&koWon(k)&&!celebrated.has(key)){ celebrated.add(key); fired=true; } });
   if(fired){ persistCeleb(); celebrate(); }
 }
 function celebrate(){
@@ -952,17 +992,32 @@ async function fetchScores(){
     if(!r.ok)return;
     const d=await r.json();
     const map={};
-    (d.matches||[]).forEach(m=>{ map[pairKey(m.h,m.a)]={st:m.st,el:m.el,hc:code(m.h),gh:m.gh,ga:m.ga}; });
+    (d.matches||[]).forEach(m=>{ map[pairKey(m.h,m.a)]={st:m.st,el:m.el,hc:code(m.h),gh:m.gh,ga:m.ga,wn:m.wn||null}; });
     // trava de sanidade: nenhum jogo pode ficar "ao vivo" para sempre. Se o feed reporta status
     // ao vivo mas o início foi há muito tempo, o dado está velho/travado — tratamos como encerrado.
     const now=Date.now(), MAX_LIVE=3.5*3600000;
     M.forEach(m=>{ const sk=map[m.pk]; if(sk && LIVE.has(sk.st) && (now-m.ms)>MAX_LIVE){ sk.st="FINISHED"; sk.el=null; } });
-    scores=map; updateStatuses(); if(view==="groups")renderGroups(); if(view==="ko")renderKnockout();
+    // jogos do mata-mata vindos do feed (fase != grupos, ou — sem fase — data a partir de 28/06)
+    const kf=[];
+    (d.matches||[]).forEach(m=>{
+      const st=(m.stage||"").toUpperCase(); const ms=m.utc?Date.parse(m.utc):NaN;
+      const isKO=(st && !st.startsWith("GROUP")) || (!m.stage && !isNaN(ms) && ms>=Date.parse("2026-06-28T00:00:00Z"));
+      if(!isKO)return;
+      const hc=code(m.h), ac=code(m.a); if(!hc||!ac)return;
+      const pk=[hc,ac].sort().join("-"), sk=map[pk];
+      if(sk && LIVE.has(sk.st) && !isNaN(ms) && (now-ms)>MAX_LIVE){ sk.st="FINISHED"; sk.el=null; }
+      kf.push({hc,ac,ms:isNaN(ms)?null:ms,st:(sk?sk.st:m.st),el:m.el,gh:m.gh,ga:m.ga,stage:st});
+    });
+    koFeed=kf; scores=map;
+    if(view==="day")renderDay(); else if(view==="groups")renderGroups(); else if(view==="ko")renderKnockout();
+    updateStatuses();
   }catch(e){}
 }
 function anyLiveOrSoon(){
   const now=Date.now();
-  return M.some(m=>{ const sk=scores[m.pk]; if(sk&&LIVE.has(sk.st))return true; return now>=m.ms-300000 && now<=m.ms+3*3600000; });
+  const g=M.some(m=>{ const sk=scores[m.pk]; if(sk&&LIVE.has(sk.st))return true; return now>=m.ms-300000 && now<=m.ms+3*3600000; });
+  if(g)return true;
+  return koFeed.some(k=>{ const sk=scores[[k.hc,k.ac].sort().join("-")]; if(sk&&LIVE.has(sk.st))return true; return k.ms&&now>=k.ms-300000 && now<=k.ms+3*3600000; });
 }
 document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible")fetchScores(); });
 setInterval(()=>{ if(document.visibilityState==="visible"&&anyLiveOrSoon())fetchScores(); },90000);

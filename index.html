@@ -244,6 +244,10 @@
   .kstat.live{color:#ff8a5c}
   @media(max-width:430px){.kgrid{grid-template-columns:1fr}}
   /* mata-mata: chave horizontal conectada (estilo Apple) */
+  .komode{display:flex;gap:6px;justify-content:center;margin:2px 0 10px}
+  .komode button{border:1px solid var(--line);background:var(--bg-raise);color:var(--muted);font-family:var(--sora);font-weight:800;font-size:12px;padding:7px 18px;border-radius:999px;cursor:pointer;transition:.18s}
+  .komode button.on{color:#fff;background:linear-gradient(120deg,var(--vio),var(--cyan));border-color:transparent;box-shadow:0 8px 22px -12px rgba(124,92,255,.7)}
+  .koradwrap{max-width:380px;margin:6px auto 22px;padding:2px}
   .koseg{display:flex;background:var(--bg-raise);border:1px solid var(--line);border-radius:14px;padding:4px;gap:4px;margin:4px 0 10px}
   .koseg button{flex:1;border:0;background:transparent;color:var(--muted);font-family:var(--sora);font-weight:800;font-size:12.5px;padding:9px 4px;border-radius:10px;cursor:pointer;transition:.18s;letter-spacing:.3px}
   .koseg button.on{color:#fff;background:linear-gradient(120deg,var(--vio),var(--cyan));box-shadow:0 8px 22px -10px rgba(124,92,255,.7)}
@@ -327,6 +331,10 @@
 
   <!-- KNOCKOUT VIEW -->
   <section id="koView" style="display:none">
+    <div class="komode" id="koMode">
+      <button data-m="linear" class="on" onclick="koSetMode('linear')">Linear</button>
+      <button data-m="circular" onclick="koSetMode('circular')">Circular</button>
+    </div>
     <div class="koseg" id="koSeg">
       <button data-r="R32" onclick="koGo('R32')">R32</button>
       <button data-r="R16" onclick="koGo('R16')">R16</button>
@@ -337,6 +345,7 @@
     <div class="kohint" id="koHint"></div>
     <div class="kowrap" id="koWrap"><div class="kobracket" id="koBracket"></div></div>
     <div id="koThird"></div>
+    <div id="koRadial" style="display:none"></div>
   </section>
 
   <footer>
@@ -524,6 +533,7 @@ M.forEach(m=>{ (ROSTER[m.g]=ROSTER[m.g]||new Set()).add(m.hc); ROSTER[m.g].add(c
 
 let view="day";
 let koWin={};
+let koMode="linear";   // "linear" | "circular" (visual)
 let koFeed=[];   // jogos do mata-mata vindos do feed oficial (preenchidos após a fase de grupos)
 function stageLabel(st){
   st=(st||"").toUpperCase();
@@ -689,6 +699,15 @@ const KOR={R32:{pt:"16-avos de final",en:"Round of 32"},R16:{pt:"Oitavas de fina
 const KOD={R32:{pt:"28 jun – 3 jul",en:"Jun 28 – Jul 3"},R16:{pt:"4 – 7 jul",en:"Jul 4 – 7"},QF:{pt:"9 – 11 jul",en:"Jul 9 – 11"},SF:{pt:"14 e 15 jul",en:"Jul 14 – 15"},TP:{pt:"18 jul",en:"Jul 18"},F:{pt:"19 jul",en:"Jul 19"}};
 function groupComplete(g){ const gm=M.filter(x=>x.g===g); return gm.length>0 && gm.every(x=>{const s=scores[x.pk];return s&&DONE.has(s.st);}); }
 function renderKnockout(){
+  const linear = koMode!=="circular";
+  const seg=document.getElementById("koSeg"), wrap=document.getElementById("koWrap"), third=document.getElementById("koThird"), radial=document.getElementById("koRadial");
+  if(seg)seg.style.display=linear?"":"none";
+  if(wrap)wrap.style.display=linear?"":"none";
+  if(third)third.style.display=linear?"":"none";
+  if(radial)radial.style.display=linear?"none":"";
+  document.querySelectorAll("#koMode button").forEach(b=>b.classList.toggle("on",(b.dataset.m||"linear")===koMode));
+  const hint=document.getElementById("koHint"); if(hint)hint.textContent=t('ko_hint');
+  if(!linear){ renderKnockoutRadial(); return; }
   const data=computeStandings(), SB={};
   data.forEach(d=>{ SB[d.group.replace("GROUP_","")]=d.table; });
   const ref=n=>(lang==="en"?"M":"J")+n;
@@ -792,6 +811,79 @@ function koActiveByScroll(){
   const ref=wrap.scrollLeft+24; let best=null,bd=1e9;
   cols.forEach(c=>{ const d=Math.abs(c.offsetLeft-ref); if(d<bd){bd=d;best=c.dataset.r;} });
   if(best)setKoActive(best);
+}
+function koSetMode(m){ koMode=m; renderKnockout(); }
+function koFullResolve(){
+  const data=computeStandings(), SB={};
+  data.forEach(d=>SB[d.group.replace("GROUP_","")]=d.table);
+  const done=g=>{const ms=M.filter(m=>m.g===g);return ms.length>0&&ms.every(m=>{const s=scores[m.pk];return s&&DONE.has(s.st);});};
+  const memoW={}, memoT={}, findK=n=>KO.find(k=>k[0]===n);
+  function slotCode(s){
+    let m;
+    if(m=s.match(/^([12])([A-L])$/)){const pos=+m[1]-1,g=m[2];return done(g)&&SB[g]&&SB[g][pos]?SB[g][pos].code:null;}
+    if(s[0]==="3")return null;
+    if(m=s.match(/^W(\d+)$/))return winOf(+m[1]);
+    if(m=s.match(/^L(\d+)$/)){const r=resK(+m[1]);return r?(r.win===r.h?r.a:r.h):null;}
+    return null;
+  }
+  function teamsOf(n){
+    if(memoT[n])return memoT[n];
+    const k=findK(n); let h=slotCode(k[2]), a=slotCode(k[3]);
+    if(h&&!a&&k[3][0]==="3"){const o=r32Opponent(h);if(o)a=o;}
+    else if(a&&!h&&k[2][0]==="3"){const o=r32Opponent(a);if(o)h=o;}
+    memoT[n]=[h,a]; return memoT[n];
+  }
+  function resK(n){
+    const [h,a]=teamsOf(n); if(!h||!a)return null;
+    const sk=scores[[h,a].sort().join("-")]; if(!sk||!DONE.has(sk.st))return null;
+    const sh=sk.hc===h; const gh=sh?sk.gh:sk.ga,ga=sh?sk.ga:sk.gh; let win=null;
+    if(sk.wn==="HOME_TEAM")win=sk.hc; else if(sk.wn==="AWAY_TEAM")win=(sk.hc===h?a:h);
+    else if(gh!=null&&ga!=null&&gh!==ga)win=gh>ga?h:a;
+    if(!win)return null; return {h,a,gh,ga,win};
+  }
+  function winOf(n){ if(n in memoW)return memoW[n]; memoW[n]=null; const r=resK(n); memoW[n]=r?r.win:null; return memoW[n]; }
+  return {teamsOf, winOf};
+}
+function renderKnockoutRadial(){
+  const box=document.getElementById("koRadial"); if(!box)return;
+  const R=koFullResolve();
+  const SZ=360, C=SZ/2, step=360/32, A0=-90;
+  const RAD={leaf:166, R32:132, R16:100, QF:70, SF:40};
+  const a=i=>A0+i*step;
+  const pol=(r,deg)=>{ const t=deg*Math.PI/180; return [C+r*Math.cos(t), C+r*Math.sin(t)]; };
+  const RORD=KO_DISPLAY.R32, findK=n=>KO.find(k=>k[0]===n);
+  const leafAngle={}, leaves=[];
+  RORD.forEach((n,d)=>{ const [h,a2]=R.teamsOf(n); const ah=a(2*d), aa=a(2*d+1); leafAngle[n]=[ah,aa];
+    leaves.push({code:h,ang:ah}); leaves.push({code:a2,ang:aa}); });
+  const rOf=rd=> rd==="R32"?RAD.R32: rd==="R16"?RAD.R16: rd==="QF"?RAD.QF: rd==="SF"?RAD.SF: 0;
+  function angOf(n){ const k=findK(n); if(k[1]==="R32"){const [x,y]=leafAngle[n];return (x+y)/2;}
+    const f=[k[2],k[3]].map(s=>+s.match(/\d+/)[0]); return (angOf(f[0])+angOf(f[1]))/2; }
+  const nodePos=n=>{ const k=findK(n); return pol(rOf(k[1]), angOf(n)); };
+  const favC=c=>!!c&&c===fav;
+  const LN=(p,q,gold)=>`<path d="M${p[0].toFixed(1)} ${p[1].toFixed(1)} L${q[0].toFixed(1)} ${q[1].toFixed(1)}" stroke="${gold?'var(--br-yellow)':'rgba(255,255,255,.13)'}" stroke-width="${gold?2.2:1.2}" fill="none" stroke-linecap="round"/>`;
+  let s=`<svg viewBox="0 0 ${SZ} ${SZ}" width="100%" preserveAspectRatio="xMidYMid meet">`;
+  // linhas: leaves -> R32
+  RORD.forEach((n,d)=>{ const np=nodePos(n); const [ch,ca]=R.teamsOf(n); const [ah,aa]=leafAngle[n];
+    s+=LN(pol(RAD.leaf,ah),np,favC(ch)); s+=LN(pol(RAD.leaf,aa),np,favC(ca)); });
+  // linhas: R16..F -> node (feeder vencedor)
+  ["R16","QF","SF","F"].forEach(rd=>{ KO.filter(k=>k[1]===rd).forEach(k=>{ const np=nodePos(k[0]);
+    [k[2],k[3]].forEach(sl=>{ const f=+sl.match(/\d+/)[0]; s+=LN(nodePos(f),np,favC(R.winOf(f))); }); }); });
+  // nós winners (R32..SF)
+  function node(x,y,r,code,gold){
+    let o=`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r}" fill="${gold?'rgba(255,212,59,.16)':'rgba(255,255,255,.05)'}" stroke="${gold?'var(--br-yellow)':'rgba(255,255,255,.18)'}" stroke-width="1.2"/>`;
+    if(code)o+=`<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" font-size="${(r*1.15).toFixed(0)}" text-anchor="middle" dominant-baseline="central">${flag(code)}</text>`;
+    return o;
+  }
+  ["R32","R16","QF","SF"].forEach(rd=>{ const rr= rd==="R32"?11: rd==="R16"?12: rd==="QF"?14:16;
+    KO.filter(k=>k[1]===rd).forEach(k=>{ const [x,y]=nodePos(k[0]); const w=R.winOf(k[0]); s+=node(x,y,rr,w,favC(w)); }); });
+  // leaves (times) na borda
+  leaves.forEach(l=>{ const [x,y]=pol(RAD.leaf,l.ang); s+=node(x,y,13,l.code,favC(l.code)); });
+  // centro: campeão ou troféu
+  const champ=R.winOf(104);
+  if(champ) s+=node(C,C,20,champ,favC(champ));
+  else s+=`<text x="${C}" y="${C}" font-size="30" text-anchor="middle" dominant-baseline="central">🏆</text>`;
+  s+="</svg>";
+  box.innerHTML=`<div class="koradwrap">${s}</div>`;
 }
 
 function renderDay(){

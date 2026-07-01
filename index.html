@@ -721,7 +721,7 @@ function renderKnockout(){
     if(m=s.match(/^L(\d+)$/)) return loseOf(+m[1]);
     return null;
   }
-  function resK(n){ const k=findK(n); if(!k)return null; const h=codeOf(k[2]),a=codeOf(k[3]); if(!h||!a)return null; const sk=scores[[h,a].sort().join("-")]; if(!sk||!DONE.has(sk.st))return null; const sh=sk.hc===h; const gh=sh?sk.gh:sk.ga,ga=sh?sk.ga:sk.gh; let win=null; if(sk.wn==="HOME_TEAM")win=sk.hc; else if(sk.wn==="AWAY_TEAM")win=(sk.hc===h?a:h); else if(gh!=null&&ga!=null&&gh!==ga)win=(gh>ga?h:a); if(!win)return null; return {h,a,gh,ga,win}; }
+  function resK(n){ const k=findK(n); if(!k)return null; let h=codeOf(k[2]),a=codeOf(k[3]); if(h&&!a&&k[3][0]==="3"){const o=r32Opponent(h);if(o)a=o;} else if(a&&!h&&k[2][0]==="3"){const o=r32Opponent(a);if(o)h=o;} if(!h||!a)return null; const sk=scores[[h,a].sort().join("-")]; if(!sk||!DONE.has(sk.st))return null; const sh=sk.hc===h; const gh=sh?sk.gh:sk.ga,ga=sh?sk.ga:sk.gh; let win=null; if(sk.wn==="HOME_TEAM")win=sk.hc; else if(sk.wn==="AWAY_TEAM")win=(sk.hc===h?a:h); else if(gh!=null&&ga!=null&&gh!==ga)win=(gh>ga?h:a); if(!win)return null; return {h,a,gh,ga,win}; }
   function winOf(n){ if(n in memoW)return memoW[n]; memoW[n]=null; const r=resK(n); memoW[n]=r?r.win:null; return memoW[n]; }
   function loseOf(n){ if(n in memoL)return memoL[n]; memoL[n]=null; const r=resK(n); memoL[n]=r?(r.win===r.h?r.a:r.h):null; return memoL[n]; }
   function slot(s){
